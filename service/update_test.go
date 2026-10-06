@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/deposist/s-ui-x/config"
+	"github.com/scssw/s-ui-x/config"
 )
 
 func TestVersionInfoFetchesAndCachesLatestRelease(t *testing.T) {
@@ -15,7 +15,7 @@ func TestVersionInfoFetchesAndCachesLatestRelease(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls.Add(1)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"tag_name":"v9.9.9","html_url":"https://github.com/deposist/s-ui-x/releases/tag/v9.9.9"}`))
+		_, _ = w.Write([]byte(`{"tag_name":"v9.9.9","html_url":"https://github.com/scssw/s-ui-x/releases/tag/v9.9.9"}`))
 	}))
 	defer server.Close()
 	resetVersionCheckForTest(t, server.Client(), server.URL)
@@ -65,7 +65,7 @@ func TestVersionInfoUsesETagAfterCacheExpiryIssue29(t *testing.T) {
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("ETag", `"release-v1"`)
-			_, _ = w.Write([]byte(`{"tag_name":"v9.9.9","html_url":"https://github.com/deposist/s-ui-x/releases/tag/v9.9.9"}`))
+			_, _ = w.Write([]byte(`{"tag_name":"v9.9.9","html_url":"https://github.com/scssw/s-ui-x/releases/tag/v9.9.9"}`))
 		case 2:
 			if got, want := r.Header.Get("If-None-Match"), `"release-v1"`; got != want {
 				t.Fatalf("If-None-Match=%q, want %q", got, want)
@@ -140,7 +140,7 @@ func TestResolveReleaseBuildsAssetURLsFromTemplate(t *testing.T) {
 	if resolved == nil || !resolved.assetAvailable {
 		t.Fatalf("expected installable asset, got %#v", resolved)
 	}
-	wantAsset := "https://github.com/deposist/s-ui-x/releases/download/v9.9.9/s-ui-linux-amd64.tar.gz"
+	wantAsset := "https://github.com/scssw/s-ui-x/releases/download/v9.9.9/s-ui-linux-amd64.tar.gz"
 	if resolved.assetURL != wantAsset || resolved.checksumURL != wantAsset+".sha256" {
 		t.Fatalf("artifact URLs not from template: %#v", resolved)
 	}

@@ -470,7 +470,7 @@ before_show_menu() {
 }
 
 install() {
-    bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh)
     if [[ $? == 0 ]]; then
         if [[ $# == 0 ]]; then
             start
@@ -489,7 +489,7 @@ update() {
         fi
         return 0
     fi
-    bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh)
+    bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh)
     if [[ $? == 0 ]]; then
         LOGI "$(t update_done)"
         exit 0
@@ -507,7 +507,7 @@ custom_version() {
 
     [[ "${panel_version}" != v* ]] && panel_version="v${panel_version}"
 
-    download_link="https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh"
+    download_link="https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh"
 
     install_command="bash <(curl -Ls $download_link) $panel_version"
 
@@ -817,7 +817,7 @@ update_shell() {
     # swap it into the root-executed path atomically only after a fully successful
     # fetch. A failed/partial transfer must never leave a broken root script in
     # /usr/bin/s-ui.
-    wget --timeout=20 --tries=5 --retry-connrefused -O "${tmp_script}" https://github.com/deposist/s-ui-x/raw/main/s-ui.sh
+    wget --timeout=20 --tries=5 --retry-connrefused -O "${tmp_script}" https://github.com/scssw/s-ui-x/raw/main/s-ui.sh
     if [[ $? != 0 || ! -s "${tmp_script}" ]]; then
         rm -f "${tmp_script}"
         echo ""

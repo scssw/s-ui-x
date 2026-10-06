@@ -260,6 +260,13 @@ export default {
       else {
         this.client = createClient()
         this.title = "add"
+        const now = new Date()
+        this.client.name = [now.getFullYear(), String(now.getMonth()+1).padStart(2, '0'), String(now.getDate()).padStart(2, '0'), String(now.getHours()).padStart(2, '0'), String(now.getMinutes()).padStart(2, '0')].join('')
+        this.client.volume = 50 * (1024 ** 3)
+        const initialExpiry = new Date(now)
+        initialExpiry.setMonth(initialExpiry.getMonth() + 1)
+        this.client.expiry = Math.floor(initialExpiry.getTime() / 1000)
+        this.client.limitIp = 3
         this.clientConfig = randomConfigs('client')
       }
       this.links = this.client.links?.filter(l => l.type == 'local')?? []
@@ -300,6 +307,13 @@ export default {
     setDate(newDate:number){
       this.client.expiry = newDate
     },
+    setSuggestedExpiry(volume:number) {
+      if (this.title !== 'add') return
+      const months = volume >= 600 ? 12 : volume >= 300 ? 6 : volume >= 150 ? 3 : 1
+      const date = new Date()
+      date.setMonth(date.getMonth() + months)
+      this.client.expiry = Math.floor(date.getTime() / 1000)
+    },
     setAllInbounds(){
       this.client.inbounds = this.inboundTags.map((i:any) => i.value).sort()
     },
@@ -328,7 +342,10 @@ export default {
     },
     Volume: {
       get() { return this.client.volume == 0 ? 0 : (this.client.volume / (1024 ** 3)) },
-      set(v:number) { this.client.volume = v > 0 ? v*(1024 ** 3) : 0 }
+      set(v:number) {
+        this.client.volume = v > 0 ? v*(1024 ** 3) : 0
+        this.setSuggestedExpiry(v || 0)
+      }
     },
     delayStart: {
       get() { return this.client.delayStart?? false },

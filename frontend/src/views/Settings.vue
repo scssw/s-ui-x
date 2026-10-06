@@ -99,6 +99,7 @@
                       <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.sslCert')" /></template>
                     </v-text-field>
                   </v-col>
+                  <v-col cols="12"><v-btn variant="tonal" size="small" @click="importDomainCert('web')">导入当前域名证书</v-btn></v-col>
                   <v-col cols="12" sm="6">
                     <v-text-field
                       type="number"
@@ -176,6 +177,7 @@
             <v-text-field v-model="settings.webCertFile" :label="$t('setting.sslCert')" placeholder="/etc/s-ui/panel.crt" persistent-placeholder hide-details>
               <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.sslCert')" /></template>
             </v-text-field>
+            <v-btn class="mt-2" variant="tonal" size="small" @click="importDomainCert('web')">导入当前域名证书</v-btn>
           </v-col>
           <v-col cols="12" sm="6" md="4">
             <v-text-field v-model="settings.webURI" :label="$t('setting.webUri')" placeholder="https://panel.example.com/app/" persistent-placeholder hide-details>
@@ -290,6 +292,7 @@
               <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.subCertFile')" /></template>
             </v-text-field>
           </v-col>
+          <v-col cols="12"><v-btn variant="tonal" size="small" @click="importDomainCert('sub')">导入当前域名证书</v-btn></v-col>
           <v-col cols="12" sm="6" md="4">
             <v-text-field v-model="settings.subDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
               <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.subDomain')" /></template>
@@ -439,6 +442,7 @@
                     <v-text-field v-model="settings.subCertFile" :label="$t('setting.sslCert')" placeholder="/etc/s-ui/sub.crt" persistent-placeholder hide-details>
                       <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.subCertFile')" /></template>
                     </v-text-field>
+                    <v-btn class="mt-2" variant="tonal" size="small" @click="importDomainCert('sub')">导入当前域名证书</v-btn>
                   </v-col>
                   <v-col cols="12" sm="6">
                     <v-text-field v-model="settings.subDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
@@ -1659,6 +1663,21 @@ const setData = (data: any) => {
   const normalized = normalizeSecretFields(data)
   settings.value = normalized
   oldSettings.value = { ...normalized }
+}
+
+const importDomainCert = (target: 'web' | 'sub') => {
+  const domain = (target === 'web' ? settings.value.webDomain : settings.value.subDomain) || window.location.hostname
+  const base = `/root/cert/${domain}`
+  if (target === 'web') {
+    settings.value.webDomain = domain
+    settings.value.webURI = `https://${domain}${settings.value.webPath}`
+    settings.value.webCertFile = `${base}/fullchain.pem`
+    settings.value.webKeyFile = `${base}/privkey.pem`
+  } else {
+    settings.value.subDomain = domain
+    settings.value.subCertFile = `${base}/fullchain.pem`
+    settings.value.subKeyFile = `${base}/privkey.pem`
+  }
 }
 
 const save = async () => {

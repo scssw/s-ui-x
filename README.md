@@ -1,25 +1,25 @@
 ## S-UI
 
 <p align="center">
-  <img width="492" height="450" alt="s-ui-x logo" src="https://raw.githubusercontent.com/deposist/s-ui-x/refs/heads/main/docs/592996937-cfc9da97-f8ea-4c68-961c-2bf164932272.png" />
+  <img width="492" height="450" alt="s-ui-x logo" src="https://raw.githubusercontent.com/scssw/s-ui-x/refs/heads/main/docs/592996937-cfc9da97-f8ea-4c68-961c-2bf164932272.png" />
 </p>
 <p align="center">
-  <a href="https://github.com/deposist/s-ui-x/releases/latest">
-    <img src="https://img.shields.io/github/v/release/deposist/s-ui-x?style=for-the-badge&label=release" alt="Release">
+  <a href="https://github.com/scssw/s-ui-x/releases/latest">
+    <img src="https://img.shields.io/github/v/release/scssw/s-ui-x?style=for-the-badge&label=release" alt="Release">
   </a>
-  <a href="https://github.com/deposist/s-ui-x/releases">
-    <img src="https://img.shields.io/github/downloads/deposist/s-ui-x/total?style=for-the-badge&label=downloads" alt="Total downloads">
+  <a href="https://github.com/scssw/s-ui-x/releases">
+    <img src="https://img.shields.io/github/downloads/scssw/s-ui-x/total?style=for-the-badge&label=downloads" alt="Total downloads">
   </a>
-  <a href="https://github.com/deposist/s-ui-x/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/deposist/s-ui-x?style=for-the-badge" alt="License">
+  <a href="https://github.com/scssw/s-ui-x/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/scssw/s-ui-x?style=for-the-badge" alt="License">
   </a>
-  <a href="https://github.com/deposist/s-ui-x/stargazers">
-    <img src="https://img.shields.io/github/stars/deposist/s-ui-x?style=for-the-badge" alt="Stars">
+  <a href="https://github.com/scssw/s-ui-x/stargazers">
+    <img src="https://img.shields.io/github/stars/scssw/s-ui-x?style=for-the-badge" alt="Stars">
   </a>
 </p>
 
 <p align="center">
-  <img width="1024" alt="s-ui-x panel screenshots" src="https://github.com/deposist/s-ui-x/blob/main/docs/screen1.jpg" />
+  <img width="1024" alt="s-ui-x panel screenshots" src="https://github.com/scssw/s-ui-x/blob/main/docs/screen1.jpg" />
 </p>
 
 <p align="center">
@@ -132,27 +132,27 @@ Use the stable build for normal installations.
 ### Linux/macOS, stable
 
 ```sh
-bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh)
 ```
 
 The command above installs the latest stable release. To pin the current stable version explicitly:
 
 ```sh
-bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh) v1.5.11
+bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh) v1.5.11
 ```
 
 
 ### Local clone
 
 ```sh
-git clone https://github.com/deposist/s-ui-x.git
+git clone https://github.com/scssw/s-ui-x.git
 cd s-ui-x
 sudo bash install.sh v1.5.11
 ```
 
 ### Windows
 
-- Stable: download from [GitHub Releases](https://github.com/deposist/s-ui-x/releases/latest), extract the ZIP, and run `install-windows.bat` as Administrator.
+- Stable: download from [GitHub Releases](https://github.com/scssw/s-ui-x/releases/latest), extract the ZIP, and run `install-windows.bat` as Administrator.
 
 Existing installations keep their settings, users, inbounds, outbounds, clients, TLS, services, and tokens. Database migrations run automatically on first start. Upgrade and rollback notes are in the changelog files: [EN](CHANGELOG-EN.md), [RU](CHANGELOG-RU.md), [中文](CHANGELOG-ZH.md).
 
@@ -160,8 +160,8 @@ Existing installations keep their settings, users, inbounds, outbounds, clients,
 
 ### Linux/macOS
 
-1. Download the latest S-UI version for your system and architecture from GitHub: [https://github.com/deposist/s-ui-x/releases/latest](https://github.com/deposist/s-ui-x/releases/latest)
-2. **Optional:** download the latest `s-ui.sh`: [https://raw.githubusercontent.com/deposist/s-ui-x/main/s-ui.sh](https://raw.githubusercontent.com/deposist/s-ui-x/main/s-ui.sh)
+1. Download the latest S-UI version for your system and architecture from GitHub: [https://github.com/scssw/s-ui-x/releases/latest](https://github.com/scssw/s-ui-x/releases/latest)
+2. **Optional:** download the latest `s-ui.sh`: [https://raw.githubusercontent.com/scssw/s-ui-x/main/s-ui.sh](https://raw.githubusercontent.com/scssw/s-ui-x/main/s-ui.sh)
 3. **Optional:** copy `s-ui.sh` to `/usr/bin/` and run `chmod +x /usr/bin/s-ui`.
 4. Extract the s-ui tar.gz archive to your chosen directory and enter the extracted folder.
 5. Copy the `*.service` files to `/etc/systemd/system/`, then run `systemctl daemon-reload`.
@@ -170,7 +170,7 @@ Existing installations keep their settings, users, inbounds, outbounds, clients,
 
 ### Windows
 
-1. Download the latest Windows version from GitHub: [https://github.com/deposist/s-ui-x/releases/latest](https://github.com/deposist/s-ui-x/releases/latest)
+1. Download the latest Windows version from GitHub: [https://github.com/scssw/s-ui-x/releases/latest](https://github.com/scssw/s-ui-x/releases/latest)
 2. Download the appropriate Windows package, for example `s-ui-windows-amd64.zip`.
 3. Extract the ZIP file to your chosen directory.
 4. Run `install-windows.bat` as Administrator.
@@ -211,7 +211,7 @@ curl -fsSL https://get.docker.com | sh
 ```shell
 services:
   s-ui:
-    image: ghcr.io/deposist/s-ui-x
+    image: ghcr.io/scssw/s-ui-x
     container_name: s-ui
     hostname: "s-ui"
     network_mode: host
@@ -236,13 +236,13 @@ docker run -itd \
     -v $PWD/cert/:/root/cert/ \
     --name s-ui \
     --restart=unless-stopped \
-    ghcr.io/deposist/s-ui-x
+    ghcr.io/scssw/s-ui-x
 ```
 
 > Build the image yourself
 
 ```shell
-git clone https://github.com/deposist/s-ui-x
+git clone https://github.com/scssw/s-ui-x
 docker build -t s-ui .
 ```
 
@@ -271,7 +271,7 @@ otherwise.
 
 ```shell
 # Clone the repository
-git clone https://github.com/deposist/s-ui-x
+git clone https://github.com/scssw/s-ui-x
 ```
 
 ### Frontend
@@ -460,27 +460,27 @@ README оставляет только установку и общий обзо
 ### Linux/macOS, stable
 
 ```sh
-bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh)
 ```
 
 Эта команда ставит последнюю stable-версию. Чтобы явно закрепить текущую stable:
 
 ```sh
-bash <(curl -Ls https://raw.githubusercontent.com/deposist/s-ui-x/main/install.sh) v1.5.11
+bash <(curl -Ls https://raw.githubusercontent.com/scssw/s-ui-x/main/install.sh) v1.5.11
 ```
 
 
 ### Локальный clone
 
 ```sh
-git clone https://github.com/deposist/s-ui-x.git
+git clone https://github.com/scssw/s-ui-x.git
 cd s-ui-x
 sudo bash install.sh v1.5.11
 ```
 
 ### Windows
 
-- Stable: скачайте архив из [GitHub Releases](https://github.com/deposist/s-ui-x/releases/latest), распакуйте ZIP и запустите `install-windows.bat` от имени администратора.
+- Stable: скачайте архив из [GitHub Releases](https://github.com/scssw/s-ui-x/releases/latest), распакуйте ZIP и запустите `install-windows.bat` от имени администратора.
 
 Существующие установки сохраняют settings, users, inbounds, outbounds, clients, TLS, services и tokens. Миграции базы запускаются автоматически при первом старте. Заметки по обновлению и откату находятся в changelog: [EN](CHANGELOG-EN.md), [RU](CHANGELOG-RU.md), [中文](CHANGELOG-ZH.md).
 
@@ -488,8 +488,8 @@ sudo bash install.sh v1.5.11
 
 ### Linux/macOS
 
-1. Скачайте последнюю версию S-UI для вашей системы и архитектуры из GitHub: [https://github.com/deposist/s-ui-x/releases/latest](https://github.com/deposist/s-ui-x/releases/latest)
-2. **Необязательно:** скачайте последнюю версию `s-ui.sh`: [https://raw.githubusercontent.com/deposist/s-ui-x/main/s-ui.sh](https://raw.githubusercontent.com/deposist/s-ui-x/main/s-ui.sh)
+1. Скачайте последнюю версию S-UI для вашей системы и архитектуры из GitHub: [https://github.com/scssw/s-ui-x/releases/latest](https://github.com/scssw/s-ui-x/releases/latest)
+2. **Необязательно:** скачайте последнюю версию `s-ui.sh`: [https://raw.githubusercontent.com/scssw/s-ui-x/main/s-ui.sh](https://raw.githubusercontent.com/scssw/s-ui-x/main/s-ui.sh)
 3. **Необязательно:** скопируйте `s-ui.sh` в `/usr/bin/` и выполните `chmod +x /usr/bin/s-ui`.
 4. Распакуйте tar.gz-архив s-ui в выбранный каталог и перейдите в распакованную папку.
 5. Скопируйте файлы `*.service` в `/etc/systemd/system/`, затем выполните `systemctl daemon-reload`.
@@ -498,7 +498,7 @@ sudo bash install.sh v1.5.11
 
 ### Windows
 
-1. Скачайте последнюю версию для Windows из GitHub: [https://github.com/deposist/s-ui-x/releases/latest](https://github.com/deposist/s-ui-x/releases/latest)
+1. Скачайте последнюю версию для Windows из GitHub: [https://github.com/scssw/s-ui-x/releases/latest](https://github.com/scssw/s-ui-x/releases/latest)
 2. Скачайте подходящий пакет для Windows, например `s-ui-windows-amd64.zip`.
 3. Распакуйте ZIP-файл в выбранный каталог.
 4. Запустите `install-windows.bat` от имени администратора.
@@ -539,7 +539,7 @@ curl -fsSL https://get.docker.com | sh
 ```shell
 services:
   s-ui:
-    image: ghcr.io/deposist/s-ui-x
+    image: ghcr.io/scssw/s-ui-x
     container_name: s-ui
     hostname: "s-ui"
     network_mode: host
@@ -564,13 +564,13 @@ docker run -itd \
     -v $PWD/cert/:/root/cert/ \
     --name s-ui \
     --restart=unless-stopped \
-    ghcr.io/deposist/s-ui-x
+    ghcr.io/scssw/s-ui-x
 ```
 
 > Самостоятельная сборка образа
 
 ```shell
-git clone https://github.com/deposist/s-ui-x
+git clone https://github.com/scssw/s-ui-x
 docker build -t s-ui .
 ```
 
@@ -599,7 +599,7 @@ maintainer-проверки, но считаются advisory, если branch p
 
 ```shell
 # Клонирование репозитория
-git clone https://github.com/deposist/s-ui-x
+git clone https://github.com/scssw/s-ui-x
 ```
 
 ### Фронтенд
@@ -699,7 +699,7 @@ certbot certonly --standalone --register-unsafely-without-email --non-interactiv
 #### Благодарность автору оригинального проекта: alireza0
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=deposist/s-ui-x&type=date&theme=dark" />
-  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=deposist/s-ui-x&type=date" />
-  <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=deposist/s-ui-x&type=date" />
+  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=scssw/s-ui-x&type=date&theme=dark" />
+  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=scssw/s-ui-x&type=date" />
+  <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=scssw/s-ui-x&type=date" />
 </picture>

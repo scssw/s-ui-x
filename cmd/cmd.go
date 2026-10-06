@@ -24,6 +24,7 @@ func ParseCmd() {
 	var path string
 	var subPort int
 	var subPath string
+	var domain string
 	var reset bool
 	var show bool
 	var clearDomain bool
@@ -35,6 +36,7 @@ func ParseCmd() {
 	settingCmd.StringVar(&path, "path", "", "set panel path")
 	settingCmd.IntVar(&subPort, "subPort", 0, "set sub port")
 	settingCmd.StringVar(&subPath, "subPath", "", "set sub path")
+	settingCmd.StringVar(&domain, "domain", "", "set panel domain and use /root/cert/<domain> TLS files")
 	migrateCmd.BoolVar(&repairFKOrphans, "repair-fk-orphans", false, "delete safe foreign-key orphans during migration")
 
 	adminCmd.BoolVar(&show, "show", false, "show first admin credentials")
@@ -130,7 +132,7 @@ func ParseCmd() {
 		case clearDomain:
 			clearWebDomain()
 		default:
-			updateSetting(port, path, subPort, subPath)
+			updateSetting(port, path, subPort, subPath, domain)
 			showSetting()
 		}
 	default:

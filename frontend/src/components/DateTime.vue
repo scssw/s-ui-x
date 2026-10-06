@@ -2,9 +2,10 @@
   <v-text-field
     id="expiry"
     :label="$t('date.expiry')"
-    v-model="dateFormatted"
+    v-model="manualDate"
     prepend-inner-icon="mdi-calendar"
-    readonly
+    placeholder="26.11.6"
+    @change="parseManualDate"
     hide-details
   ></v-text-field>
   <DatePicker
@@ -50,9 +51,13 @@ export default {
     return {
       menu: false,
       input: new Date(),
+      manualDate: '',
     }
   },
   components: { DatePicker },
+  created() {
+    this.formatManualDate()
+  },
   computed: {
     locale() {
       return locale
@@ -74,6 +79,25 @@ export default {
     }
   },
   methods: {
+    formatManualDate() {
+      if (this.expDate === 0) { this.manualDate = i18n.global.t('unlimited'); return }
+      const date = new Date(this.expDate * 1000)
+      this.manualDate = `${date.getFullYear()}.${date.getMonth()+1}.${date.getDate()}`
+    },
+    parseManualDate() {
+      const match = this.manualDate.trim().match(/^(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})$/)
+      if (!match) return
+      let year = Number(match[1])
+      if (year < 100) year += 2000
+      const month = Number(match[2])
+      const day = Number(match[3])
+      const now = new Date()
+      const date = new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds())
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return
+      this.input = date
+      this.$emit('submit', Math.floor(date.getTime() / 1000))
+      this.formatManualDate()
+    },
     updateInput(v:Date) {
       this.input = v
     },
@@ -90,6 +114,7 @@ export default {
     }
   },
   watch: {
+    expiry() { this.formatManualDate() },
     menu(v) {
       if (v) {
         this.input = this.expiry == 0 ? new Date() : new Date(this.expDate*1000)

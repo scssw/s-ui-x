@@ -370,6 +370,13 @@ func (s *SettingService) GetWebDomain() (string, error) {
 	return s.getString("webDomain")
 }
 
+func (s *SettingService) SetWebDomain(domain string) error { return s.setString("webDomain", domain) }
+func (s *SettingService) SetWebURI(uri string) error { return s.setString("webURI", uri) }
+func (s *SettingService) SetWebCertFiles(cert, key string) error {
+	if err := s.setString("webCertFile", cert); err != nil { return err }
+	return s.setString("webKeyFile", key)
+}
+
 func (s *SettingService) GetWebURI() (string, error) {
 	return s.getString("webURI")
 }

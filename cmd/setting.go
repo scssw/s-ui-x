@@ -48,7 +48,7 @@ func clearWebDomain() {
 	showSetting()
 }
 
-func updateSetting(port int, path string, subPort int, subPath string) {
+func updateSetting(port int, path string, subPort int, subPath string, domain string) {
 	err := database.InitDB(config.GetDBPath())
 	if err != nil {
 		fmt.Println(err)
@@ -88,6 +88,30 @@ func updateSetting(port int, path string, subPort int, subPath string) {
 		} else {
 			fmt.Println("set sub path success")
 		}
+	}
+	if domain != "" {
+		cert := "/root/cert/" + domain + "/fullchain.pem"
+		key := "/root/cert/" + domain + "/privkey.pem"
+		if path == "" {
+			path, err = settingService.GetWebPath()
+			if err != nil {
+				fmt.Println("get panel path failed:", err)
+				return
+			}
+		}
+		if err := settingService.SetWebDomain(domain); err != nil {
+			fmt.Println("set domain failed:", err)
+			return
+		}
+		if err := settingService.SetWebURI("https://" + domain + path); err != nil {
+			fmt.Println("set panel URI failed:", err)
+			return
+		}
+		if err := settingService.SetWebCertFiles(cert, key); err != nil {
+			fmt.Println("set domain certificate paths failed:", err)
+			return
+		}
+		fmt.Println("set panel domain and certificate paths success")
 	}
 }
 

@@ -367,19 +367,37 @@ prepare_cookie_key() {
 }
 
 config_after_install() {
+    local fresh_install=false
+    [[ -f "/usr/local/s-ui/db/s-ui.db" ]] || fresh_install=true
     echo -e "${yellow}$(t migrate)${plain}"
     /usr/local/s-ui/sui migrate
 
+    if [[ "${fresh_install}" != true ]]; then
+        echo -e "${yellow}$(t install_done)${plain}"
+        echo "检测到已有 S-UI 数据，保留现有面板、订阅和管理员设置，跳过安装配置交互。"
+        return
+    fi
+
     echo -e "${yellow}$(t install_done)${plain}"
     read -rp "$(t continue_settings)" config_confirm
-    if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" ]]; then
+    if [[ "${config_confirm}" == "y" || "${config_confirm}" == "Y" || "${fresh_install}" == true ]]; then
+        if [[ "${fresh_install}" == true ]]; then
+            config_port=$((20000 + RANDOM % 30000))
+            config_subPort=$((20000 + RANDOM % 30000))
+            while [[ "$config_subPort" == "$config_port" ]]; do config_subPort=$((20000 + RANDOM % 30000)); done
+            config_path="/app/"
+            config_subPath="/sub/"
+            echo -e "首次安装将随机设置面板端口 ${config_port} 和订阅端口 ${config_subPort}。"
+        fi
         echo -e "$(t enter_panel_port)"
-        read -r config_port
+        read -r config_port_input
+        [[ -z "$config_port_input" ]] || config_port=$config_port_input
         echo -e "$(t enter_panel_path)"
         read -r config_path
 
         echo -e "$(t enter_sub_port)"
-        read -r config_subPort
+        read -r config_subPort_input
+        [[ -z "$config_subPort_input" ]] || config_subPort=$config_subPort_input
         echo -e "$(t enter_sub_path)"
         read -r config_subPath
 
@@ -391,6 +409,17 @@ config_after_install() {
         [ -z "$config_subPath" ] || params="$params -subPath $config_subPath"
         /usr/local/s-ui/sui setting ${params}
 
+        if [[ "${fresh_install}" == true ]]; then
+            local usernameTemp passwordTemp
+            usernameTemp=$(head -c 9 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 10)
+            passwordTemp=$(head -c 24 /dev/urandom | base64 | tr -dc 'a-zA-Z0-9' | head -c 20)
+            read -rp "自定义面板用户名（留空随机生成）: " config_account
+            read -rp "自定义面板密码（留空随机生成）: " config_password
+            config_account=${config_account:-$usernameTemp}
+            config_password=${config_password:-$passwordTemp}
+            /usr/local/s-ui/sui admin -username "${config_account}" -password "${config_password}"
+            echo -e "面板用户名：${config_account}\n面板密码：${config_password}"
+        else
         read -rp "$(t change_admin)" admin_confirm
         if [[ "${admin_confirm}" == "y" || "${admin_confirm}" == "Y" ]]; then
             read -rp "$(t set_username)" config_account
@@ -401,6 +430,36 @@ config_after_install() {
         else
             echo -e "${yellow}$(t current_admin)${plain}"
             /usr/local/s-ui/sui admin -show
+        fi
+        fi
+
+        if [[ "${fresh_install}" == true ]]; then
+            local cert_domains=() domain_choice domain_name
+            if [[ -d /root/cert ]]; then
+                while IFS= read -r -d '' cert_dir; do
+                    [[ -f "${cert_dir}/fullchain.pem" && -f "${cert_dir}/privkey.pem" ]] || continue
+                    cert_domains+=("$(basename "$cert_dir")")
+                done < <(find /root/cert -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+            fi
+            if ((${#cert_domains[@]})); then
+                echo "发现可用证书域名："
+                for i in "${!cert_domains[@]}"; do echo "$((i+1)). ${cert_domains[$i]}"; done
+            else
+                echo "未发现证书目录。"
+            fi
+            echo "输入序号绑定，输入 no 手动输入域名，直接回车跳过："
+            read -r domain_choice
+            if [[ "$domain_choice" =~ ^[0-9]+$ ]] && ((domain_choice >= 1 && domain_choice <= ${#cert_domains[@]})); then
+                domain_name=${cert_domains[$((domain_choice-1))]}
+            elif [[ "$domain_choice" == "no" || "$domain_choice" == "NO" ]]; then
+                read -rp "请输入域名（证书需位于 /root/cert/<域名>/）: " domain_name
+            fi
+            if [[ -n "$domain_name" && -f "/root/cert/${domain_name}/fullchain.pem" && -f "/root/cert/${domain_name}/privkey.pem" ]]; then
+                /usr/local/s-ui/sui setting -domain "$domain_name" -path "$config_path"
+                echo "已绑定 https://${domain_name}${config_path}"
+            elif [[ -n "$domain_name" ]]; then
+                echo "未找到该域名的 fullchain.pem 和 privkey.pem，请先申请证书后再绑定。"
+            fi
         fi
     else
         echo -e "${red}$(t cancelled)${plain}"
@@ -457,13 +516,13 @@ install_s-ui() {
     artifact_name="s-ui-linux-$(arch).tar.gz"
 
     if [[ $# -eq 0 || -z "${1:-}" ]]; then
-        last_version=$(curl -Ls "https://api.github.com/repos/deposist/s-ui-x/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        last_version=$(curl -Ls "https://api.github.com/repos/scssw/s-ui-x/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$last_version" ]]; then
             echo -e "${red}$(t rate_limited)${plain}"
             exit 1
         fi
         echo -e "$(t fetching_latest "${last_version}")"
-        url="https://github.com/deposist/s-ui-x/releases/download/${last_version}/${artifact_name}"
+        url="https://github.com/scssw/s-ui-x/releases/download/${last_version}/${artifact_name}"
         wget -N --timeout=20 --tries=5 --retry-connrefused -O "/tmp/${artifact_name}" "${url}"
         if [[ $? -ne 0 ]]; then
             echo -e "${red}$(t download_failed)${plain}"
@@ -473,7 +532,7 @@ install_s-ui() {
     else
         last_version=$1
         [[ "${last_version}" != v* ]] && last_version="v${last_version}"
-        url="https://github.com/deposist/s-ui-x/releases/download/${last_version}/${artifact_name}"
+        url="https://github.com/scssw/s-ui-x/releases/download/${last_version}/${artifact_name}"
         echo -e "$(t installing_specific "${last_version}")"
         wget -N --timeout=20 --tries=5 --retry-connrefused -O "/tmp/${artifact_name}" "${url}"
         if [[ $? -ne 0 ]]; then
