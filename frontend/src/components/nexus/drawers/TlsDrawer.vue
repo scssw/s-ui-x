@@ -194,6 +194,7 @@ import { realityHandshakeServers as realityHandshakeServerOptions } from '@/type
 import AcmeVue from '@/components/tls/Acme.vue'
 import EchVue from '@/components/tls/Ech.vue'
 import HttpUtils from '@/plugins/httputil'
+import Data from '@/store/modules/data'
 import { push } from 'notivue'
 import { i18n } from '@/locales'
 import RandomUtil from '@/plugins/randomUtil'
