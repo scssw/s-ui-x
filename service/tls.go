@@ -2,9 +2,11 @@ package service
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/deposist/s-ui-x/database"
 	"github.com/deposist/s-ui-x/database/model"
+	"github.com/deposist/s-ui-x/util"
 	"github.com/deposist/s-ui-x/util/common"
 
 	"gorm.io/gorm"
@@ -39,6 +41,9 @@ func (s *TlsService) Save(tx *gorm.DB, action string, data json.RawMessage, host
 		var tls model.Tls
 		err = json.Unmarshal(data, &tls)
 		if err != nil {
+			return nil, nil, err
+		}
+		if err = normalizeRealityServerTLS(&tls); err != nil {
 			return nil, nil, err
 		}
 		err = tx.Save(&tls).Error
@@ -97,4 +102,42 @@ func (s *TlsService) Save(tx *gorm.DB, action string, data json.RawMessage, host
 	}
 
 	return nil, nil, nil
+}
+
+// normalizeRealityServerTLS repairs malformed legacy Reality values before they
+// are persisted and applied to sing-box. Invalid Short IDs are discarded; an
+// empty list is valid and avoids aborting the entire core restart.
+func normalizeRealityServerTLS(tls *model.Tls) error {
+	var server map[string]any
+	if err := json.Unmarshal(tls.Server, &server); err != nil {
+		return err
+	}
+	reality, ok := server["reality"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	if ids, ok := reality["short_id"].([]any); ok {
+		valid := make([]string, 0, len(ids))
+		for _, value := range ids {
+			if id, ok := value.(string); ok && util.ValidRealityShortID(id) {
+				valid = append(valid, id)
+			}
+		}
+		if len(valid) != len(ids) {
+			reality["short_id"] = valid
+		}
+	}
+	if name, _ := server["server_name"].(string); strings.TrimSpace(name) == "" {
+		if handshake, ok := reality["handshake"].(map[string]any); ok {
+			if host, ok := handshake["server"].(string); ok && host != "" {
+				server["server_name"] = host
+			}
+		}
+	}
+	updated, err := json.Marshal(server)
+	if err != nil {
+		return err
+	}
+	tls.Server = updated
+	return nil
 }

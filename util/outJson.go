@@ -122,7 +122,15 @@ func addTls(out *map[string]interface{}, tls *model.Tls) {
 			}
 			realityConfig["enabled"] = true
 			if shortIDs, ok := reality["short_id"].([]interface{}); ok && len(shortIDs) > 0 {
-				realityConfig["short_id"] = shortIDs[common.RandomInt(len(shortIDs))]
+				validIDs := make([]interface{}, 0, len(shortIDs))
+				for _, value := range shortIDs {
+					if id, ok := value.(string); ok && ValidRealityShortID(id) {
+						validIDs = append(validIDs, id)
+					}
+				}
+				if len(validIDs) > 0 {
+					realityConfig["short_id"] = validIDs[common.RandomInt(len(validIDs))]
+				}
 			}
 			tlsConfig["reality"] = realityConfig
 		}

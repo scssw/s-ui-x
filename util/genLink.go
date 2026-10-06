@@ -11,6 +11,18 @@ import (
 	"github.com/deposist/s-ui-x/util/common"
 )
 
+func ValidRealityShortID(id string) bool {
+	if len(id) > 16 || len(id)%2 != 0 {
+		return false
+	}
+	for _, r := range id {
+		if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f') || (r >= 'A' && r <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
 var InboundTypeWithLink = []string{"socks", "http", "mixed", "shadowsocks", "naive", "hysteria", "hysteria2", "anytls", "tuic", "vless", "trojan", "vmess"}
 
 type LinkParam struct {
@@ -139,9 +151,26 @@ func prepareTls(t *model.Tls) map[string]interface{} {
 			}
 			clientReality["enabled"] = reality["enabled"]
 			if shortIDs, hasSIds := reality["short_id"].([]interface{}); hasSIds && len(shortIDs) > 0 {
-				clientReality["short_id"] = shortIDs[common.RandomInt(len(shortIDs))]
+				validIDs := make([]interface{}, 0, len(shortIDs))
+				for _, value := range shortIDs {
+					if id, ok := value.(string); ok && ValidRealityShortID(id) {
+						validIDs = append(validIDs, id)
+					}
+				}
+				if len(validIDs) > 0 {
+					clientReality["short_id"] = validIDs[common.RandomInt(len(validIDs))]
+				}
 			}
 			oTls["reality"] = clientReality
+		}
+	}
+	if sni, _ := oTls["server_name"].(string); strings.TrimSpace(sni) == "" {
+		if reality, ok := iTls["reality"].(map[string]interface{}); ok {
+			if handshake, ok := reality["handshake"].(map[string]interface{}); ok {
+				if server, ok := handshake["server"].(string); ok && server != "" {
+					oTls["server_name"] = server
+				}
+			}
 		}
 	}
 	return oTls
@@ -679,7 +708,7 @@ func getTlsParams(params *[]LinkParam, tls map[string]interface{}, insecureKey s
 			*params = append(*params, LinkParam{"fp", fingerprint})
 		}
 	}
-	if sni, ok := tls["server_name"].(string); ok {
+	if sni, ok := tls["server_name"].(string); ok && strings.TrimSpace(sni) != "" {
 		*params = append(*params, LinkParam{"sni", sni})
 	}
 	if alpn, ok := tls["alpn"].([]interface{}); ok {

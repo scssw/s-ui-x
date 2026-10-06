@@ -250,6 +250,7 @@
                 <v-text-field
                   label="Short IDs"
                   hide-details
+                  :rules="shortIdRules"
                   append-icon="mdi-refresh"
                   @click:append="randomSID"
                   v-model="short_id">
@@ -487,7 +488,7 @@ export default {
             private_key: '',
             short_id: RandomUtil.randomShortId(),
           },
-          server_name: ""
+          server_name: realityHandshakeServerOptions[realityCount % realityHandshakeServerOptions.length]
         }
         this.tls.client = <oTls>{ reality: { public_key: "" }, utls: defaultOutTls.utls }
         await this.genRealityKey()
@@ -501,9 +502,14 @@ export default {
       this.$emit('close')
     },
     saveChanges() {
+      if (this.tls.server?.reality?.enabled && !this.validRealityShortIds()) return
       this.loading = true
       this.$emit('save', this.tls)
       this.loading = false
+    },
+    validRealityShortIds() {
+      const ids = this.inTls.reality?.short_id ?? []
+      return ids.every((id:string) => id === '' || (/^[0-9a-fA-F]{2,16}$/.test(id) && id.length % 2 === 0))
     },
     async genSelfSigned(){
       this.loading = true
@@ -576,6 +582,9 @@ export default {
     }
   },
   computed: {
+    shortIdRules(): Function[] {
+      return [(value:string) => String(value ?? '').split(',').every((id:string) => id.trim() === '' || (/^[0-9a-fA-F]{2,16}$/.test(id.trim()) && id.trim().length % 2 === 0)) || 'Short IDs must be even-length hexadecimal strings (up to 16 characters)']
+    },
     realityHandshakeServers: () => realityHandshakeServerOptions,
     inTls(): iTls {
       return this.tls.server

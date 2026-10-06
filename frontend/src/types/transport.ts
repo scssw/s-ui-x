@@ -1,4 +1,5 @@
 export const TrspTypes = {
+  TCP: 'tcp',
   HTTP: 'http',
   WebSocket: 'ws',
   QUIC: 'quic',
@@ -8,7 +9,10 @@ export const TrspTypes = {
 
 export type TrspType = typeof TrspTypes[keyof typeof TrspTypes]
 
-export type Transport = HTTP|WebSocket|QUIC|gRPC|HTTPUpgrade
+export type Transport = TCP|HTTP|WebSocket|QUIC|gRPC|HTTPUpgrade
+
+// TCP is the default VLESS stream and has no transport-specific settings.
+export interface TCP extends TransportBasics {}
 
 interface TransportBasics {
   type: TrspType

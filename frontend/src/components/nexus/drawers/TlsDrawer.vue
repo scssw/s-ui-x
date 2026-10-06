@@ -130,7 +130,7 @@
             <v-text-field :label="$t('tls.pubKey')" hide-details v-model="outTls.reality.public_key"></v-text-field>
           </v-col>
           <v-col cols="12">
-            <v-text-field label="Short IDs" hide-details append-icon="mdi-refresh" @click:append="randomSID" v-model="short_id"></v-text-field>
+            <v-text-field label="Short IDs" :rules="shortIdRules" hide-details append-icon="mdi-refresh" @click:append="randomSID" v-model="short_id"></v-text-field>
           </v-col>
           <v-col cols="12" sm="6" md="4" v-if="optionTime">
             <v-text-field label="Max Time Diference" type="number" min="1" :suffix="$t('date.m')" hide-details v-model="max_time"></v-text-field>
@@ -308,7 +308,7 @@ export default {
             private_key: '',
             short_id: RandomUtil.randomShortId(),
           },
-          server_name: ""
+          server_name: realityHandshakeServerOptions[realityCount % realityHandshakeServerOptions.length]
         }
         this.tls.client = <oTls>{ reality: { public_key: "" }, utls: JSON.parse(JSON.stringify(defaultOutTls.utls)) }
         await this.genRealityKey()
@@ -322,6 +322,7 @@ export default {
       this.$emit('close')
     },
     saveChanges() {
+      if (this.tls.server?.reality?.enabled && !(this.inTls.reality?.short_id ?? []).every((id:string) => id === '' || (/^[0-9a-fA-F]{2,16}$/.test(id) && id.length % 2 === 0))) return
       this.loading = true
       this.$emit('save', this.tls)
       this.loading = false
@@ -397,6 +398,9 @@ export default {
     }
   },
   computed: {
+    shortIdRules(): Function[] {
+      return [(value:string) => String(value ?? '').split(',').every((id:string) => id.trim() === '' || (/^[0-9a-fA-F]{2,16}$/.test(id.trim()) && id.trim().length % 2 === 0)) || 'Short IDs must be even-length hexadecimal strings (up to 16 characters)']
+    },
     realityHandshakeServers: () => realityHandshakeServerOptions,
     dirty(): boolean {
       return this.snapshot !== "" && JSON.stringify(this.tls) !== this.snapshot
