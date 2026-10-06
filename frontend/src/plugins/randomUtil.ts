@@ -19,7 +19,7 @@ const RandomUtil = {
     return Math.floor(random * (max - min + 1) + min)
   },
   randomInt(n: number) {
-    return this.randomIntRange(0, n)
+    return this.randomIntRange(0, n - 1)
   },
   randomSeq(count: number): string {
     if (count <= 0) {
@@ -68,7 +68,7 @@ const RandomUtil = {
     const ids = new Set<string>()
     while (ids.size < 8) {
       const byteLength = this.randomIntRange(1, 8)
-      ids.add(Array.from({ length: byteLength * 2 }, () => hex[this.randomIntRange(0, 15)]).join(''))
+      ids.add(Array.from({ length: byteLength * 2 }, () => hex[this.randomInt(16)]).join(''))
     }
     return Array.from(ids)
   }
