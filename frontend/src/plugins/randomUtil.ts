@@ -62,7 +62,15 @@ const RandomUtil = {
   },
   randomShortId(): string[] {
     const hex = '0123456789abcdef'
-    return Array.from({ length: 4 }, () => Array.from({ length: 8 }, () => hex[this.randomInt(16)]).join(''))
+    // Match the Xray/3x-ui format: multiple lowercase hex IDs, each an even
+    // number of characters up to 16. Randomize the byte length as well as the
+    // contents so generated values aren't the old fixed 8-character IDs.
+    const ids = new Set<string>()
+    while (ids.size < 8) {
+      const byteLength = this.randomIntRange(1, 8)
+      ids.add(Array.from({ length: byteLength * 2 }, () => hex[this.randomInt(16)]).join(''))
+    }
+    return Array.from(ids)
   }
 }
 

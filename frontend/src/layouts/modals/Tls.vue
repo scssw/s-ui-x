@@ -620,7 +620,7 @@ export default {
       get() { return this.inTls.reality?.short_id ? this.inTls.reality.short_id.join(',') : undefined },
       set(v: string) {
         if (this.inTls.reality){
-          this.inTls.reality.short_id = v.length > 0 ? v.split(',') : []
+          this.inTls.reality.short_id = v.length > 0 ? v.split(',').map((id:string) => id.trim()) : []
         }
       }
     },
