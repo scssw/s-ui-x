@@ -393,13 +393,15 @@ config_after_install() {
         read -r config_port_input
         [[ -z "$config_port_input" ]] || config_port=$config_port_input
         echo -e "$(t enter_panel_path)"
-        read -r config_path
+        read -r config_path_input
+        [[ -z "$config_path_input" ]] || config_path=$config_path_input
 
         echo -e "$(t enter_sub_port)"
         read -r config_subPort_input
         [[ -z "$config_subPort_input" ]] || config_subPort=$config_subPort_input
         echo -e "$(t enter_sub_path)"
-        read -r config_subPath
+        read -r config_subPath_input
+        [[ -z "$config_subPath_input" ]] || config_subPath=$config_subPath_input
 
         echo -e "${yellow}$(t initializing)${plain}"
         params=""
@@ -455,8 +457,15 @@ config_after_install() {
                 read -rp "请输入域名（证书需位于 /root/cert/<域名>/）: " domain_name
             fi
             if [[ -n "$domain_name" && -f "/root/cert/${domain_name}/fullchain.pem" && -f "/root/cert/${domain_name}/privkey.pem" ]]; then
-                /usr/local/s-ui/sui setting -domain "$domain_name" -path "$config_path"
-                echo "已绑定 https://${domain_name}${config_path}"
+                local setting_output
+                if setting_output=$(/usr/local/s-ui/sui setting -domain "$domain_name" -path "$config_path" 2>&1) && \
+                    grep -Fq "Panel Domain:" <<< "$setting_output" && grep -Fq "$domain_name" <<< "$setting_output"; then
+                    local panel_uri_path="${config_path:-/app/}"
+                    echo "已绑定 https://${domain_name}${panel_uri_path}，证书：/root/cert/${domain_name}/fullchain.pem"
+                else
+                    echo "$setting_output"
+                    echo "域名绑定失败。此安装包可能不支持 setting -domain，请先发布包含该功能的新版本。"
+                fi
             elif [[ -n "$domain_name" ]]; then
                 echo "未找到该域名的 fullchain.pem 和 privkey.pem，请先申请证书后再绑定。"
             fi

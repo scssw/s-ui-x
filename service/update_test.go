@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/scssw/s-ui-x/config"
+	"github.com/deposist/s-ui-x/config"
 )
 
 func TestVersionInfoFetchesAndCachesLatestRelease(t *testing.T) {
