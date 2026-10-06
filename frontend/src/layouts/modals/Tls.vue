@@ -387,6 +387,7 @@ export default {
       menu: false,
       tlsType: 0,
       usePath: 0,
+      realityHandshakeServers,
       alpn: [
         { title: "H3", value: 'h3' },
         { title: "H2", value: 'h2' },
