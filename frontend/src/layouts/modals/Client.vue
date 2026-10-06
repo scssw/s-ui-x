@@ -225,10 +225,25 @@ import { defineAsyncComponent } from 'vue'
 import { createClient, randomConfigs, updateConfigs, Link, shuffleConfigs } from '@/types/clients'
 import { HumanReadable } from '@/plugins/utils'
 import Data from '@/store/modules/data'
+import HttpUtils from '@/plugins/httputil'
 import { locale } from '@/locales'
 import FormShell from '@/components/nexus/drawers/FormShell.vue'
 
 const DatePick = defineAsyncComponent(() => import('@/components/DateTime.vue'))
+
+const panelDomainPrefix = (domain: unknown): string => {
+  const host = String(domain ?? '').trim().replace(/^[a-z]+:\/\//i, '').split(/[/:?#]/, 1)[0]
+  const letters = host.split('.')[0].replace(/[^a-z]/gi, '')
+  return letters ? letters[0].toUpperCase() + letters.slice(1) : 'User'
+}
+
+const clientNameTimestamp = (date: Date): string => [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, '0'),
+  String(date.getDate()).padStart(2, '0'),
+  String(date.getHours()).padStart(2, '0'),
+  String(date.getMinutes()).padStart(2, '0'),
+].join('')
 
 export default {
   props: ['visible', 'id', 'inboundTags', 'groups'],
@@ -261,7 +276,10 @@ export default {
         this.client = createClient()
         this.title = "add"
         const now = new Date()
-        this.client.name = [now.getFullYear(), String(now.getMonth()+1).padStart(2, '0'), String(now.getDate()).padStart(2, '0'), String(now.getHours()).padStart(2, '0'), String(now.getMinutes()).padStart(2, '0')].join('')
+        const settings = await HttpUtils.get('api/settings')
+        const domain = settings.success ? settings.obj.webDomain : ''
+        const fallbackDomain = typeof window !== 'undefined' ? window.location.hostname : ''
+        this.client.name = panelDomainPrefix(domain || fallbackDomain) + clientNameTimestamp(now)
         this.client.volume = 50 * (1024 ** 3)
         const initialExpiry = new Date(now)
         initialExpiry.setMonth(initialExpiry.getMonth() + 1)
