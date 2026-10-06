@@ -582,7 +582,7 @@ export default {
     }
   },
   computed: {
-    shortIdRules(): Function[] {
+    shortIdRules(): ((value: string) => boolean | string)[] {
       return [(value:string) => String(value ?? '').split(',').every((id:string) => id.trim() === '' || (/^[0-9a-fA-F]{2,16}$/.test(id.trim()) && id.trim().length % 2 === 0)) || 'Short IDs must be even-length hexadecimal strings (up to 16 characters)']
     },
     realityHandshakeServers: () => realityHandshakeServerOptions,
