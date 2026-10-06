@@ -249,7 +249,7 @@
               <v-col cols="12">
                 <v-text-field
                   label="Short IDs"
-                  hide-details
+                  hide-details="auto"
                   :rules="shortIdRules"
                   append-icon="mdi-refresh"
                   @click:append="randomSID"
@@ -502,14 +502,20 @@ export default {
       this.$emit('close')
     },
     saveChanges() {
-      if (this.tls.server?.reality?.enabled && !this.validRealityShortIds()) return
+      if (this.tls.server?.reality?.enabled && !this.validRealityShortIds()) {
+        push.error({ message: 'Short IDs must be even-length hexadecimal strings (up to 16 characters)' })
+        return
+      }
       this.loading = true
       this.$emit('save', this.tls)
       this.loading = false
     },
     validRealityShortIds() {
       const ids = this.inTls.reality?.short_id ?? []
-      return ids.every((id:string) => id === '' || (/^[0-9a-fA-F]{2,16}$/.test(id) && id.length % 2 === 0))
+      return ids.every((id:string) => {
+        const value = id.trim()
+        return value === '' || (/^[0-9a-fA-F]{2,16}$/.test(value) && value.length % 2 === 0)
+      })
     },
     async genSelfSigned(){
       this.loading = true

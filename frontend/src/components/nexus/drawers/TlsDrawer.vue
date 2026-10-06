@@ -130,7 +130,7 @@
             <v-text-field :label="$t('tls.pubKey')" hide-details v-model="outTls.reality.public_key"></v-text-field>
           </v-col>
           <v-col cols="12">
-            <v-text-field label="Short IDs" :rules="shortIdRules" hide-details append-icon="mdi-refresh" @click:append="randomSID" v-model="short_id"></v-text-field>
+            <v-text-field label="Short IDs" :rules="shortIdRules" hide-details="auto" append-icon="mdi-refresh" @click:append="randomSID" v-model="short_id"></v-text-field>
           </v-col>
           <v-col cols="12" sm="6" md="4" v-if="optionTime">
             <v-text-field label="Max Time Diference" type="number" min="1" :suffix="$t('date.m')" hide-details v-model="max_time"></v-text-field>
@@ -322,10 +322,19 @@ export default {
       this.$emit('close')
     },
     saveChanges() {
-      if (this.tls.server?.reality?.enabled && !(this.inTls.reality?.short_id ?? []).every((id:string) => id === '' || (/^[0-9a-fA-F]{2,16}$/.test(id) && id.length % 2 === 0))) return
+      if (this.tls.server?.reality?.enabled && !this.validRealityShortIds()) {
+        push.error({ message: 'Short IDs must be even-length hexadecimal strings (up to 16 characters)' })
+        return
+      }
       this.loading = true
       this.$emit('save', this.tls)
       this.loading = false
+    },
+    validRealityShortIds() {
+      return (this.inTls.reality?.short_id ?? []).every((id:string) => {
+        const value = id.trim()
+        return value === '' || (/^[0-9a-fA-F]{2,16}$/.test(value) && value.length % 2 === 0)
+      })
     },
     async genSelfSigned(){
       this.loading = true
