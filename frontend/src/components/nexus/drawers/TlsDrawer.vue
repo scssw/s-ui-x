@@ -29,7 +29,8 @@
       </v-row>
       <v-row>
         <v-col cols="12" sm="6" md="4" v-if="inTls.server_name != undefined">
-          <v-text-field label="SNI" hide-details v-model="inTls.server_name"></v-text-field>
+          <v-combobox v-if="tlsType == 0" label="SNI" :items="certDomains" clearable @update:model-value="selectCertDomain" hide-details v-model="inTls.server_name"></v-combobox>
+          <v-text-field v-else label="SNI" hide-details v-model="inTls.server_name"></v-text-field>
         </v-col>
         <template v-if="tlsType == 0">
           <v-col cols="12" sm="6" md="4" v-if="inTls.min_version">
@@ -111,7 +112,7 @@
       <template v-if="outTls.reality && inTls.reality">
         <v-row>
           <v-col cols="12" sm="6" md="4">
-            <v-text-field :label="$t('types.shdwTls.hs')" hide-details v-model="inTls.reality.handshake.server"></v-text-field>
+            <v-select :label="$t('types.shdwTls.hs')" :items="realityHandshakeServers" hide-details v-model="inTls.reality.handshake.server"></v-select>
           </v-col>
           <v-col cols="12" sm="6" md="4">
             <v-text-field :label="$t('out.port')" type="number" min="0" hide-details v-model="server_port"></v-text-field>
@@ -189,6 +190,7 @@
 
 <script lang="ts">
 import { tls, iTls, defaultInTls, oTls, defaultOutTls } from '@/types/tls'
+import { realityHandshakeServers as realityHandshakeServerOptions } from '@/types/tls'
 import AcmeVue from '@/components/tls/Acme.vue'
 import EchVue from '@/components/tls/Ech.vue'
 import HttpUtils from '@/plugins/httputil'
@@ -205,6 +207,7 @@ export default {
       tls: <tls>{ id: 0, name: '', server: <iTls>{ enabled: true }, client: <oTls>{} },
       title: "add",
       loading: false,
+      certDomains: <string[]>[],
       menu: false,
       tlsType: 0,
       usePath: 0,
@@ -261,7 +264,18 @@ export default {
     }
   },
   methods: {
+    async loadCertDomains() {
+      const result = await HttpUtils.get('api/cert-domains')
+      if (result.success && Array.isArray(result.obj)) this.certDomains = result.obj
+    },
+    selectCertDomain(domain: string) {
+      if (!domain || this.tlsType != 0) return
+      this.inTls.certificate_path = `/root/cert/${domain}/fullchain.pem`
+      this.inTls.key_path = `/root/cert/${domain}/privkey.pem`
+      this.usePath = 0
+    },
     updateData(id: number) {
+      this.loadCertDomains()
       if (id > 0) {
         const newData = <tls>JSON.parse(this.$props.data)
         this.tls = newData
@@ -279,14 +293,24 @@ export default {
       }
       this.snapshot = JSON.stringify(this.tls)
     },
-    changeTlsType(){
+    async changeTlsType(){
       if (this.tlsType) {
+        const realityCount = Data().tlsConfigs.filter((item:any) => item.server?.reality).length
         this.tls.server = <iTls>{
           enabled: true,
-          reality: { enabled: true, handshake: { server_port: 443 }, short_id: RandomUtil.randomShortId() },
+          reality: {
+            enabled: true,
+            handshake: {
+              server: realityHandshakeServerOptions[realityCount % realityHandshakeServerOptions.length],
+              server_port: 443,
+            },
+            private_key: '',
+            short_id: RandomUtil.randomShortId(),
+          },
           server_name: ""
         }
         this.tls.client = <oTls>{ reality: { public_key: "" }, utls: JSON.parse(JSON.stringify(defaultOutTls.utls)) }
+        await this.genRealityKey()
       } else {
         this.tls.server = <iTls>{ enabled: true }
         this.tls.client = <oTls>{}
@@ -372,6 +396,7 @@ export default {
     }
   },
   computed: {
+    realityHandshakeServers: () => realityHandshakeServerOptions,
     dirty(): boolean {
       return this.snapshot !== "" && JSON.stringify(this.tls) !== this.snapshot
     },

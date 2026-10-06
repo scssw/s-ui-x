@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -360,6 +361,35 @@ func (a *ApiService) GetKeypairs(c *gin.Context) {
 	options := c.Query("o")
 	keypair := a.ServerService.GenKeypair(kType, options)
 	jsonObj(c, keypair, nil)
+}
+
+// GetCertDomains returns domains with a complete certificate pair under the
+// panel's standard /root/cert/<domain> directory.
+func (a *ApiService) GetCertDomains(c *gin.Context) {
+	entries, err := os.ReadDir("/root/cert")
+	if err != nil {
+		if os.IsNotExist(err) {
+			jsonObj(c, []string{}, nil)
+			return
+		}
+		jsonObj(c, nil, err)
+		return
+	}
+	domains := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		domain := entry.Name()
+		if _, err := os.Stat(filepath.Join("/root/cert", domain, "fullchain.pem")); err != nil {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join("/root/cert", domain, "privkey.pem")); err != nil {
+			continue
+		}
+		domains = append(domains, domain)
+	}
+	jsonObj(c, domains, nil)
 }
 
 func (a *ApiService) GetDb(c *gin.Context) {

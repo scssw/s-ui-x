@@ -19,7 +19,7 @@ export default {
   props: ['inbound', 'tlsConfigs'],
   computed: {
     tlsItems(): any[] {
-      return [ { title: i18n.global.t('none'), value: 0 }, ...this.$props.tlsConfigs?.map((t:any) => { return { title: t.name, value: t.id } } )]
+      return [ { title: i18n.global.t('none'), value: 0 }, ...this.$props.tlsConfigs?.map((t:any) => { return { title: `${t.name}${t.server?.reality ? ' · Reality' : ' · TLS'}`, value: t.id } } )]
     }
   }
 }
