@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -105,7 +106,19 @@ func updateSetting(port int, path string, subPort int, subPath string, domain st
 			fmt.Println("set domain failed:", err)
 			return
 		}
-		if err := settingService.SetWebURI("https://" + domain + path); err != nil {
+		panelPort := port
+		if panelPort <= 0 {
+			panelPort, err = settingService.GetPort()
+			if err != nil {
+				fmt.Println("get panel port failed:", err)
+				return
+			}
+		}
+		portSuffix := ""
+		if panelPort > 0 && panelPort != 443 {
+			portSuffix = ":" + strconv.Itoa(panelPort)
+		}
+		if err := settingService.SetWebURI("https://" + domain + portSuffix + path); err != nil {
 			fmt.Println("set panel URI failed:", err)
 			return
 		}

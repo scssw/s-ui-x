@@ -1041,17 +1041,12 @@ ssl_apply_domain_to_panel() {
     return 0
 }
 
-# The panel stores its password as a one-way hash, so the existing password
-# cannot be displayed. Offer an explicit, opt-in reset to print a new one.
+# The panel stores its password as a one-way hash, so only the username and
+# reset guidance can be displayed without changing the account.
 ssl_show_panel_credentials() {
-    local bin="/usr/local/s-ui/sui" reset_choice
+    local bin="/usr/local/s-ui/sui"
     "${bin}" admin -show
-    read -r -p "Reset the admin password and display a new one? This invalidates the current password. [y/N]: " reset_choice
-    if [[ "${reset_choice}" =~ ^[Yy]$ ]]; then
-        "${bin}" admin -reset
-    else
-        echo "The existing password is stored as a hash and cannot be displayed."
-    fi
+    echo "The existing password is stored as a hash and cannot be displayed; it was not changed."
 }
 
 # Bind an already issued certificate under /root/cert/<domain> to the panel.

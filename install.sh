@@ -437,7 +437,9 @@ config_after_install() {
                 if setting_output=$(/usr/local/s-ui/sui setting -domain "$domain_name" -path "$config_path" 2>&1) && \
                     grep -Fq "Panel Domain:" <<< "$setting_output" && grep -Fq "$domain_name" <<< "$setting_output"; then
                     local panel_uri_path="${config_path:-/app/}"
-                    echo "已绑定 https://${domain_name}${panel_uri_path}，证书：/root/cert/${domain_name}/fullchain.pem"
+                    local panel_uri_port=""
+                    [[ "${config_port:-2095}" == "443" ]] || panel_uri_port=":${config_port:-2095}"
+                    echo "已绑定 https://${domain_name}${panel_uri_port}${panel_uri_path}，证书：/root/cert/${domain_name}/fullchain.pem"
                 else
                     echo "$setting_output"
                     echo "域名绑定失败。此安装包可能不支持 setting -domain，请先发布包含该功能的新版本。"
