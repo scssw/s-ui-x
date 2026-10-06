@@ -107,6 +107,7 @@ t() {
             acme_install_fail)   echo "安装 acme 失败"; return ;;
             acme_install_ok)     echo "安装 acme 成功"; return ;;
             ssl_get)             echo "获取 SSL"; return ;;
+            ssl_bind_local)      echo "绑定本地域名证书"; return ;;
             ssl_revoke)          echo "吊销证书"; return ;;
             ssl_force_renew)     echo "强制续签"; return ;;
             ssl_self_signed)     echo "自签名证书"; return ;;
@@ -303,6 +304,8 @@ t() {
         ru:acme_install_ok)     echo "acme успешно установлен";;
         en:ssl_get)             echo "Issue an SSL certificate";;
         ru:ssl_get)             echo "Получить SSL";;
+        en:ssl_bind_local)      echo "Bind a local domain certificate";;
+        ru:ssl_bind_local)      echo "Привязать локальный сертификат домена";;
         en:ssl_revoke)          echo "Revoke a certificate";;
         ru:ssl_revoke)          echo "Отозвать сертификат";;
         en:ssl_force_renew)     echo "Force renew";;
@@ -984,6 +987,7 @@ ssl_cert_issue_main() {
     echo -e "${green}\t3.${plain} $(t ssl_force_renew)"
     echo -e "${green}\t4.${plain} $(t ssl_self_signed)"
     echo -e "${green}\t5.${plain} $(t ssl_ip)"
+    echo -e "${green}\t6.${plain} $(t ssl_bind_local)"
     read -p "$(t select_option)" choice
     case "$choice" in
         1) ssl_cert_issue ;;
@@ -999,8 +1003,112 @@ ssl_cert_issue_main() {
             ~/.acme.sh/acme.sh --renew -d "${domain}" --force ;;
         4) generate_self_signed_cert ;;
         5) ssl_cert_issue_ip ;;
+        6) ssl_bind_local_domain ;;
         *) echo "$(t invalid_choice)" ;;
     esac
+}
+
+# Apply a locally stored domain certificate to the panel and restart it so the
+# web listener loads the new domain, URL, and certificate paths.
+ssl_apply_domain_to_panel() {
+    local bin="/usr/local/s-ui/sui"
+    local domain="$1" setting_output service_status uri_output
+
+    if ! setting_output=$("${bin}" setting -domain "${domain}" 2>&1) || \
+        ! grep -Fq "set panel domain and certificate paths success" <<< "${setting_output}"; then
+        printf '%s\n' "${setting_output}"
+        LOGE "Could not bind certificate to the panel."
+        return 1
+    fi
+    printf '%s\n' "${setting_output}"
+
+    if ! systemctl restart s-ui; then
+        if ! systemctl start s-ui; then
+            LOGE "Certificate is bound, but the panel could not be restarted or started."
+            return 1
+        fi
+    fi
+    sleep 2
+    check_status s-ui
+    service_status=$?
+    if [[ ${service_status} != 0 ]]; then
+        LOGE "Certificate is bound, but the panel did not start. Check the S-UI logs."
+        return 1
+    fi
+
+    uri_output=$("${bin}" uri 2>&1)
+    echo "Panel URL: ${uri_output}"
+    return 0
+}
+
+# The panel stores its password as a one-way hash, so the existing password
+# cannot be displayed. Offer an explicit, opt-in reset to print a new one.
+ssl_show_panel_credentials() {
+    local bin="/usr/local/s-ui/sui" reset_choice
+    "${bin}" admin -show
+    read -r -p "Reset the admin password and display a new one? This invalidates the current password. [y/N]: " reset_choice
+    if [[ "${reset_choice}" =~ ^[Yy]$ ]]; then
+        "${bin}" admin -reset
+    else
+        echo "The existing password is stored as a hash and cannot be displayed."
+    fi
+}
+
+# Bind an already issued certificate under /root/cert/<domain> to the panel.
+ssl_bind_local_domain() {
+    local bin="/usr/local/s-ui/sui"
+    local cert_dir domain choice
+    local -a cert_domains=()
+
+    if [[ ! -x "${bin}" ]]; then
+        LOGE "S-UI binary not found at ${bin}; install S-UI first."
+        before_show_menu
+        return 1
+    fi
+    if [[ ! -d /root/cert ]]; then
+        echo "No local certificate directory found at /root/cert."
+        before_show_menu
+        return 1
+    fi
+
+    while IFS= read -r -d '' cert_dir; do
+        [[ -f "${cert_dir}/fullchain.pem" && -f "${cert_dir}/privkey.pem" ]] || continue
+        cert_domains+=("$(basename "${cert_dir}")")
+    done < <(find /root/cert -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+
+    if ((${#cert_domains[@]} == 0)); then
+        echo "No complete certificates found under /root/cert/<domain>/."
+        before_show_menu
+        return 1
+    fi
+
+    echo "Local certificates:"
+    for i in "${!cert_domains[@]}"; do
+        printf '%d. %s\n' "$((i + 1))" "${cert_domains[$i]}"
+    done
+    read -r -p "Enter a number to bind (0 to cancel): " choice
+    if [[ "${choice}" == "0" ]]; then
+        before_show_menu
+        return 0
+    fi
+    if [[ ! "${choice}" =~ ^[0-9]+$ ]] || ((choice < 1 || choice > ${#cert_domains[@]})); then
+        LOGE "Invalid certificate selection."
+        before_show_menu
+        return 1
+    fi
+
+    domain="${cert_domains[$((choice - 1))]}"
+    if [[ ! "${domain}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+        LOGE "Invalid domain directory name: ${domain}"
+        before_show_menu
+        return 1
+    fi
+    if ! ssl_apply_domain_to_panel "${domain}"; then
+        before_show_menu
+        return 1
+    fi
+    ssl_show_panel_credentials
+    before_show_menu
 }
 
 # ssl_cert_issue_ip drives the in-process IP-address certificate issuance exposed
@@ -1089,6 +1197,12 @@ ssl_cert_issue() {
 
     local domain=""
     read -p "Domain / Домен: " domain
+    domain="$(echo -n "${domain}" | tr -d '[:space:]')"
+    if [[ ! "${domain}" =~ ^[A-Za-z0-9.-]+$ ]]; then
+        LOGE "Invalid domain."
+        before_show_menu
+        return 1
+    fi
     LOGD "Domain: ${domain}"
     # Detect an existing acme.sh cert for this exact domain. Scan every row
     # (column 1) rather than only the last line, so the check stays correct
@@ -1114,7 +1228,6 @@ ssl_cert_issue() {
     fi
 
     certPath="/root/cert/${domain}"
-    rm -rf "$certPath"
     mkdir -p "$certPath"
 
     local WebPort=80
@@ -1124,18 +1237,44 @@ ssl_cert_issue() {
         WebPort=80
     fi
     ~/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+    local panel_was_running=0
+    check_status s-ui
+    [[ $? == 0 ]] && panel_was_running=1
+    if [[ ${panel_was_running} == 1 ]]; then
+        systemctl stop s-ui || {
+            LOGE "Could not stop S-UI before the HTTP-01 challenge."
+            before_show_menu
+            return 1
+        }
+    fi
     ~/.acme.sh/acme.sh --issue -d "${domain}" --standalone --httpport "${WebPort}" $force_flag
     if [ $? -ne 0 ]; then
         LOGE "Issue failed; aborting."
-        rm -rf ~/.acme.sh/${domain}
-        exit 1
+        if [[ ${panel_was_running} == 1 ]]; then systemctl start s-ui; fi
+        before_show_menu
+        return 1
     fi
-    ~/.acme.sh/acme.sh --installcert -d "${domain}" \
+    if ! ~/.acme.sh/acme.sh --installcert -d "${domain}" \
         --key-file "/root/cert/${domain}/privkey.pem" \
-        --fullchain-file "/root/cert/${domain}/fullchain.pem"
+        --fullchain-file "/root/cert/${domain}/fullchain.pem"; then
+        LOGE "Certificate was issued, but could not be installed under /root/cert/${domain}."
+        if [[ ${panel_was_running} == 1 ]]; then systemctl start s-ui; fi
+        before_show_menu
+        return 1
+    fi
     ~/.acme.sh/acme.sh --upgrade
     chmod 755 "$certPath"/*
     ls -lah "$certPath"/*
+
+    if ! ssl_apply_domain_to_panel "${domain}"; then
+        LOGE "Certificate was issued but could not be applied to the panel."
+        if [[ ${panel_was_running} == 1 ]]; then systemctl start s-ui; fi
+        before_show_menu
+        return 1
+    fi
+    LOGI "SSL certificate is active on the panel."
+    ssl_show_panel_credentials
+    before_show_menu
 }
 
 ssl_cert_issue_CF() {
