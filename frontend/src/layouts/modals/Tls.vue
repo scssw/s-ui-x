@@ -375,7 +375,7 @@ import { push } from 'notivue'
 import { i18n } from '@/locales'
 import RandomUtil from '@/plugins/randomUtil'
 import Data from '@/store/modules/data'
-import { realityHandshakeServers } from '@/types/tls'
+import { realityHandshakeServers as realityHandshakeServerOptions } from '@/types/tls'
 export default {
   props: ['visible', 'data', 'id'],
   emits: ['close', 'save'],
@@ -387,7 +387,6 @@ export default {
       menu: false,
       tlsType: 0,
       usePath: 0,
-      realityHandshakeServers,
       alpn: [
         { title: "H3", value: 'h3' },
         { title: "H2", value: 'h2' },
@@ -466,7 +465,7 @@ export default {
           reality: {
             enabled: true,
             handshake: {
-              server: realityHandshakeServers[realityCount % realityHandshakeServers.length],
+              server: realityHandshakeServerOptions[realityCount % realityHandshakeServerOptions.length],
               server_port: 443,
             },
             private_key: '',
@@ -561,6 +560,7 @@ export default {
     }
   },
   computed: {
+    realityHandshakeServers: () => realityHandshakeServerOptions,
     inTls(): iTls {
       return this.tls.server
     },
