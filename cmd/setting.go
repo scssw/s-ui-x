@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/deposist/s-ui-x/config"
 	"github.com/deposist/s-ui-x/database"
+	"github.com/deposist/s-ui-x/database/model"
 	"github.com/deposist/s-ui-x/service"
 
 	"github.com/shirou/gopsutil/v4/net"
@@ -111,8 +113,62 @@ func updateSetting(port int, path string, subPort int, subPath string, domain st
 			fmt.Println("set domain certificate paths failed:", err)
 			return
 		}
+		if err := ensureDomainTlsTemplate(domain, cert, key); err != nil {
+			fmt.Println("create domain TLS template failed:", err)
+			return
+		}
 		fmt.Println("set panel domain and certificate paths success")
 	}
+}
+
+func ensureDomainTlsTemplate(domain string, certPath string, keyPath string) error {
+	db := database.GetDB()
+	var configs []model.Tls
+	if err := db.Where("id > 0").Find(&configs).Error; err != nil {
+		return err
+	}
+	for _, config := range configs {
+		var server struct {
+			ServerName      string `json:"server_name"`
+			CertificatePath string `json:"certificate_path"`
+			KeyPath         string `json:"key_path"`
+		}
+		if json.Unmarshal(config.Server, &server) == nil && server.ServerName == domain && server.CertificatePath != "" && server.KeyPath != "" {
+			return nil
+		}
+	}
+
+	prefix := strings.ToLower(strings.Split(strings.TrimSpace(domain), ".")[0])
+	prefix = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			return r
+		}
+		return -1
+	}, prefix)
+	if prefix == "" {
+		prefix = "tls"
+	}
+	name := prefix
+	for suffix := 2; ; suffix++ {
+		var count int64
+		if err := db.Model(&model.Tls{}).Where("name = ?", name).Count(&count).Error; err != nil {
+			return err
+		}
+		if count == 0 {
+			break
+		}
+		name = fmt.Sprintf("%s-%d", prefix, suffix)
+	}
+	server, err := json.Marshal(map[string]any{
+		"enabled": true, "server_name": domain,
+		"certificate_path": certPath, "key_path": keyPath,
+	})
+	if err != nil {
+		return err
+	}
+	return db.Create(&model.Tls{
+		Name: name, Server: json.RawMessage(server), Client: json.RawMessage(`{}`),
+	}).Error
 }
 
 func showSetting() {

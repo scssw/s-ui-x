@@ -1,7 +1,5 @@
 #!/bin/bash
-# S-UI installer with multilingual UI (English / Russian / Chinese).
-# Language choice can be supplied non-interactively via env:
-#   SUI_LANG=en|ru|zh  bash install.sh ...
+# S-UI installer with Chinese management messages.
 # A version tag (e.g. "v1.4.2-beta") may be provided as the only positional
 # argument to install a specific release.
 
@@ -17,34 +15,7 @@ SECRETBOX_DROPIN_DIR="/etc/systemd/system/s-ui.service.d"
 SECRETBOX_DROPIN_FILE="${SECRETBOX_DROPIN_DIR}/10-secretbox-env.conf"
 
 ask_language() {
-    if [[ -n "${SUI_LANG}" ]]; then
-        case "${SUI_LANG}" in
-            en|ru|zh) lang="${SUI_LANG}"; return ;;
-        esac
-    fi
-    if [[ -f "${LANG_FILE}" ]]; then
-        local saved
-        saved=$(cat "${LANG_FILE}" 2>/dev/null | tr -d '[:space:]')
-        case "${saved}" in
-            en|ru|zh) lang="${saved}"; return ;;
-        esac
-    fi
-    if [[ ! -t 0 ]]; then
-        # Non-interactive (piped from curl) and no env: default to English.
-        lang="en"
-        return
-    fi
-    echo
-    echo "Select language / Выберите язык / 请选择语言:"
-    echo "  1) English"
-    echo "  2) Русский"
-    echo "  3) 中文"
-    read -rp "[1-3, default 1]: " lang_choice
-    case "${lang_choice}" in
-        2|ru|RU|Russian|Русский) lang="ru" ;;
-        3|zh|ZH|Chinese|中文|简体中文) lang="zh" ;;
-        *) lang="en" ;;
-    esac
+    lang="zh"
 }
 
 t() {
