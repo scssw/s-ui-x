@@ -368,13 +368,16 @@ prepare_cookie_key() {
 
 config_after_install() {
     local fresh_install=false
-    [[ -f "/usr/local/s-ui/db/s-ui.db" ]] || fresh_install=true
+    local db_folder="${SUI_DB_FOLDER:-/usr/local/s-ui/db}"
+    [[ "${db_folder}" = /* ]] || db_folder="/usr/local/s-ui/${db_folder}"
+    [[ -f "${db_folder}/s-ui.db" ]] || fresh_install=true
     echo -e "${yellow}$(t migrate)${plain}"
     /usr/local/s-ui/sui migrate
 
     if [[ "${fresh_install}" != true ]]; then
         echo -e "${yellow}$(t install_done)${plain}"
         echo "检测到已有 S-UI 数据，保留现有面板、订阅和管理员设置，跳过安装配置交互。"
+        echo "数据目录：${db_folder}（数据库：${db_folder}/s-ui.db）。"
         return
     fi
 
@@ -385,9 +388,11 @@ config_after_install() {
             config_port=$((20000 + RANDOM % 30000))
             config_subPort=$((20000 + RANDOM % 30000))
             while [[ "$config_subPort" == "$config_port" ]]; do config_subPort=$((20000 + RANDOM % 30000)); done
-            config_path="/app/"
+            local random_path
+            random_path=$(head -c 64 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | cut -c1-6)
+            config_path="/${random_path}/"
             config_subPath="/sub/"
-            echo -e "首次安装将随机设置面板端口 ${config_port} 和订阅端口 ${config_subPort}。"
+            echo -e "首次安装将随机设置面板端口 ${config_port}、订阅端口 ${config_subPort} 和面板路径 ${config_path}。"
         fi
         echo -e "$(t enter_panel_port)"
         read -r config_port_input

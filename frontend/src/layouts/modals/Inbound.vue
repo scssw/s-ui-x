@@ -243,6 +243,12 @@ export default {
       // Use previous data
       const prevConfig = { id: this.inbound.id, tag: tag, listen: this.inbound.listen?? "::", listen_port: this.inbound.listen_port }
       this.inbound = createInbound(this.inbound.type, this.inbound.type != this.inTypes.Tun ? prevConfig : { tag: tag })
+      if ([this.inTypes.AnyTls, this.inTypes.Hysteria2].includes(this.inbound.type)) {
+        const tlsConfigs = [...(this.tlsConfigs ?? [])].sort((a:any, b:any) => Number(b.id) - Number(a.id))
+        const defaultTls = tlsConfigs.find((item:any) => !item.server?.reality && item.server?.certificate_path && item.server?.key_path)
+          ?? tlsConfigs.find((item:any) => !item.server?.reality)
+        this.inbound.tls_id = defaultTls?.id ?? 0
+      }
       if (this.HasInData.includes(this.inbound.type)){
         this.inbound.addrs = []
         this.inbound.out_json = {}

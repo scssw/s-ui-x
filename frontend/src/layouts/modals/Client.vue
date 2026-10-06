@@ -267,6 +267,7 @@ export default {
         initialExpiry.setMonth(initialExpiry.getMonth() + 1)
         this.client.expiry = Math.floor(initialExpiry.getTime() / 1000)
         this.client.limitIp = 3
+        this.client.inbounds = this.inboundTags?.length ? [this.inboundTags[0].value] : []
         this.clientConfig = randomConfigs('client')
       }
       this.links = this.client.links?.filter(l => l.type == 'local')?? []

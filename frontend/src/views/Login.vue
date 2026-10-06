@@ -11,41 +11,29 @@
                 <v-alert v-if="errorMsg" type="error" density="compact" variant="tonal" class="mt-1">{{ errorMsg }}</v-alert>
                 <v-btn :loading="loading" type="submit" color="primary" block class="mt-2" v-text="$t('actions.submit')"></v-btn>
               </v-form>
-              <v-select
-                density="compact"
-                class="mt-2"
-                hide-details
-                variant="solo"
-                :label="$t('menu.language')"
-                :items="languages"
-                v-model="$i18n.locale"
-                @update:modelValue="changeLocale">
-                <template v-slot:append>
-                  <v-menu>
-                    <template v-slot:activator="{ props }">
-                      <v-btn
-                        :aria-label="$t('menu.theme')"
-                        icon
-                        :title="$t('menu.theme')"
-                        v-bind="props"
-                      >
-                        <v-icon>mdi-theme-light-dark</v-icon>
-                      </v-btn>
-                    </template>
-                    <v-list>
-                      <v-list-item
-                        v-for="th in themes"
-                        :key="th.value"
-                        @click="changeTheme(th.value)"
-                        :prepend-icon="th.icon"
-                        :active="isActiveTheme(th.value)"
-                      >
-                        <v-list-item-title>{{ $t(`theme.${th.value}`) }}</v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-menu>
+              <v-menu>
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    :aria-label="$t('menu.theme')"
+                    icon
+                    :title="$t('menu.theme')"
+                    v-bind="props"
+                  >
+                    <v-icon>mdi-theme-light-dark</v-icon>
+                  </v-btn>
                 </template>
-              </v-select>
+                <v-list>
+                  <v-list-item
+                    v-for="th in themes"
+                    :key="th.value"
+                    @click="changeTheme(th.value)"
+                    :prepend-icon="th.icon"
+                    :active="isActiveTheme(th.value)"
+                  >
+                    <v-list-item-title>{{ $t(`theme.${th.value}`) }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
             </v-card-text>
           </v-card>
         </v-col>
@@ -55,14 +43,13 @@
   
 <script lang="ts" setup>
 import { ref } from "vue"
-import { useLocale,useTheme } from 'vuetify'
-import { i18n, languages, setI18nLocale } from '@/locales'
+import { useTheme } from 'vuetify'
+import { i18n } from '@/locales'
 import { useRouter } from 'vue-router'
 import HttpUtil, { resetInvalidLoginHandling } from '@/plugins/httputil'
 
 
 const theme = useTheme()
-const locale = useLocale()
 
 const themes = [
   { value: 'light', icon: 'mdi-white-balance-sunny' },
@@ -105,10 +92,6 @@ const login = async () => {
     // localized "invalid credentials" message for the common wrong-password case.
     errorMsg.value = response.msg || i18n.global.t('login.invalidCredentials')
   }
-}
-const changeLocale = async (l: string | null) => {
-  const selectedLocale = await setI18nLocale(l ?? 'en')
-  locale.current.value = selectedLocale
 }
 const changeTheme = (th: string) => {
   theme.change(th)

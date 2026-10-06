@@ -70,7 +70,7 @@
                     </v-text-field>
                   </v-col>
                   <v-col cols="12" sm="6">
-                    <v-text-field v-model="settings.webDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
+                    <v-text-field v-model="settings.webDomain" @update:model-value="setDomainDefaults('web', $event)" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
                       <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.webDomain')" /></template>
                     </v-text-field>
                   </v-col>
@@ -164,7 +164,7 @@
             </v-text-field>
           </v-col>
           <v-col cols="12" sm="6" md="4">
-            <v-text-field v-model="settings.webDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
+            <v-text-field v-model="settings.webDomain" @update:model-value="setDomainDefaults('web', $event)" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
               <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.webDomain')" /></template>
             </v-text-field>
           </v-col>
@@ -294,7 +294,7 @@
           </v-col>
           <v-col cols="12"><v-btn variant="tonal" size="small" @click="importDomainCert('sub')">导入当前域名证书</v-btn></v-col>
           <v-col cols="12" sm="6" md="4">
-            <v-text-field v-model="settings.subDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
+            <v-text-field v-model="settings.subDomain" @update:model-value="setDomainDefaults('sub', $event)" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
               <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.subDomain')" /></template>
             </v-text-field>
           </v-col>
@@ -445,7 +445,7 @@
                     <v-btn class="mt-2" variant="tonal" size="small" @click="importDomainCert('sub')">导入当前域名证书</v-btn>
                   </v-col>
                   <v-col cols="12" sm="6">
-                    <v-text-field v-model="settings.subDomain" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
+                    <v-text-field v-model="settings.subDomain" @update:model-value="setDomainDefaults('sub', $event)" :label="$t('setting.domain')" placeholder="example.com" persistent-placeholder hide-details>
                       <template v-slot:append-inner><SettingInfo :text="$t('setting.hint.subDomain')" /></template>
                     </v-text-field>
                   </v-col>
@@ -1388,6 +1388,7 @@ import { normalizeSecretFields, stripSecretPlaceholders } from '@/components/set
 import { push } from 'notivue'
 import { Config, Ntp } from '@/types/config'
 import Data from '@/store/modules/data'
+import { createDomainTlsTemplate } from '@/types/tls'
 
 const route = useRoute()
 const tab = ref(route.query.tab === 'basics' ? 't6' : 't1')
@@ -1680,6 +1681,38 @@ const importDomainCert = (target: 'web' | 'sub') => {
   }
 }
 
+const setDomainDefaults = (target: 'web' | 'sub', rawDomain: string) => {
+  const domain = String(rawDomain ?? '').trim()
+  if (!domain) return
+  const base = `/root/cert/${domain}`
+  if (target === 'web') {
+    if (!settings.value.webCertFile || settings.value.webCertFile.startsWith('/root/cert/')) settings.value.webCertFile = `${base}/fullchain.pem`
+    if (!settings.value.webKeyFile || settings.value.webKeyFile.startsWith('/root/cert/')) settings.value.webKeyFile = `${base}/privkey.pem`
+  } else {
+    if (!settings.value.subCertFile || settings.value.subCertFile.startsWith('/root/cert/')) settings.value.subCertFile = `${base}/fullchain.pem`
+    if (!settings.value.subKeyFile || settings.value.subKeyFile.startsWith('/root/cert/')) settings.value.subKeyFile = `${base}/privkey.pem`
+  }
+}
+
+const ensureDomainTlsTemplate = async () => {
+  const isSubDomain = Boolean(settings.value.subDomain)
+  const domain = isSubDomain ? settings.value.subDomain : settings.value.webDomain
+  if (!domain) return
+  const certPath = isSubDomain ? settings.value.subCertFile : settings.value.webCertFile
+  const keyPath = isSubDomain ? settings.value.subKeyFile : settings.value.webKeyFile
+  if (Data().tlsConfigs.some((item:any) => item.server?.server_name === domain && item.server?.certificate_path && item.server?.key_path)) return
+  const preset = createDomainTlsTemplate(
+    domain,
+    certPath || `/root/cert/${domain}/fullchain.pem`,
+    keyPath || `/root/cert/${domain}/privkey.pem`,
+  )
+  const baseName = preset.name
+  let suffix = 2
+  while (Data().tlsConfigs.some((item:any) => item.name === preset.name)) preset.name = `${baseName}-${suffix++}`
+  const saved = await Data().save('tls', 'new', preset)
+  if (!saved) push.error({ title: i18n.global.t('error'), message: 'TLS 模板创建失败，请在 TLS 页面手动添加。' })
+}
+
 const save = async () => {
   loading.value = true
   const payload = stripSecretPlaceholders(settings.value)
@@ -1699,6 +1732,7 @@ const save = async () => {
       })
     }
     setData(msg.obj.settings)
+    await ensureDomainTlsTemplate()
   }
   loading.value = false
 }

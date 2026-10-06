@@ -312,7 +312,7 @@ const clients = computed((): any[] => {
 const onlineUsers = computed(() => new Set<string>(Data().onlines?.user ?? []))
 
 const inbounds = computed((): any[] => {
-  return Data().inbounds?? []
+  return [...(Data().inbounds ?? [])].sort((a, b) => Number(b.id) - Number(a.id))
 })
 
 const inboundTags = computed((): any[] => {

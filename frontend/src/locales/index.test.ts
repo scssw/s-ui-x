@@ -19,23 +19,22 @@ describe('locale loading', () => {
     stubLocalStorage()
   })
 
-  it('loads only default messages on default startup', async () => {
+  it('loads simplified Chinese messages on startup', async () => {
     const { i18n, loadInitialLocaleMessages } = await import('./index')
 
     await loadInitialLocaleMessages()
 
-    expect(i18n.global.availableLocales).toContain('en')
-    expect(i18n.global.availableLocales).not.toContain('ru')
+    expect(i18n.global.availableLocales).toEqual(['zhHans'])
   })
 
-  it('loads stored locale with english fallback on startup', async () => {
+  it('ignores an old stored locale and starts in simplified Chinese', async () => {
     storage.set('locale', 'ru')
     const { i18n, loadInitialLocaleMessages } = await import('./index')
 
     await loadInitialLocaleMessages()
 
-    expect(i18n.global.availableLocales).toEqual(expect.arrayContaining(['en', 'ru']))
-    expect(i18n.global.availableLocales).not.toContain('fa')
+    expect(i18n.global.availableLocales).toEqual(['zhHans'])
+    expect(i18n.global.locale.value).toBe('zhHans')
   })
 
   it('loads and stores locales when changed', async () => {
@@ -46,17 +45,17 @@ describe('locale loading', () => {
     expect(selectedLocale).toBe('zhHans')
     expect(storage.get('locale')).toBe('zhHans')
     expect(i18n.global.locale.value).toBe('zhHans')
-    expect(i18n.global.availableLocales).toEqual(expect.arrayContaining(['en', 'zhHans']))
+    expect(i18n.global.availableLocales).toEqual(['zhHans'])
   })
 
-  it('falls back to english for unsupported locales', async () => {
+  it('falls back to simplified Chinese for unsupported locales', async () => {
     const { i18n, setI18nLocale } = await import('./index')
 
     const selectedLocale = await setI18nLocale('missing')
 
-    expect(selectedLocale).toBe('en')
-    expect(storage.get('locale')).toBe('en')
-    expect(i18n.global.locale.value).toBe('en')
-    expect(i18n.global.availableLocales).toEqual(['en'])
+    expect(selectedLocale).toBe('zhHans')
+    expect(storage.get('locale')).toBe('zhHans')
+    expect(i18n.global.locale.value).toBe('zhHans')
+    expect(i18n.global.availableLocales).toEqual(['zhHans'])
   })
 })

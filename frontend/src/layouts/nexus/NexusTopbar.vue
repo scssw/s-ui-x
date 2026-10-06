@@ -51,17 +51,6 @@
           />
         </template>
         <v-list density="compact" min-width="240">
-          <v-list-subheader>{{ $t('menu.language') }}</v-list-subheader>
-          <v-list-item
-            v-for="language in languages"
-            :key="language.value"
-            :active="isActiveLocale(language.value)"
-            prepend-icon="lucide:languages"
-            @click="changeLocale(language.value)"
-          >
-            <v-list-item-title>{{ language.title }}</v-list-item-title>
-          </v-list-item>
-          <v-divider />
           <v-list-subheader>{{ $t('menu.theme') }}</v-list-subheader>
           <v-list-item
             v-for="item in themes"
@@ -92,30 +81,6 @@
       </v-menu>
 
       <template v-else>
-        <v-menu>
-          <template #activator="{ props }">
-            <v-btn
-              :aria-label="$t('menu.language')"
-              icon
-              :title="$t('menu.language')"
-              variant="text"
-              v-bind="props"
-            >
-              <v-icon icon="lucide:languages" />
-            </v-btn>
-          </template>
-          <v-list>
-            <v-list-item
-              v-for="language in languages"
-              :key="language.value"
-              :active="isActiveLocale(language.value)"
-              @click="changeLocale(language.value)"
-            >
-              <v-list-item-title>{{ language.title }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-
         <v-menu>
           <template #activator="{ props }">
             <v-btn
@@ -174,7 +139,6 @@
 <script lang="ts" setup>
 import UiModeControl from '@/components/UiModeControl.vue'
 import { pageHeader, topbarSearch } from '@/components/nexus/primitives/pageHeaderPortal'
-import { languages, setI18nLocale } from '@/locales'
 import { isNexusEnabled } from '@/uiMode/featureGate'
 import { UI_PALETTES, useUiPalette } from '@/uiMode/palette'
 import type { UiMode } from '@/uiMode/types'
@@ -182,7 +146,7 @@ import { useUiMode } from '@/uiMode/useUiMode'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { useDisplay, useLocale, useTheme } from 'vuetify'
+import { useDisplay, useTheme } from 'vuetify'
 
 defineProps<{
   showNavigationToggle: boolean
@@ -196,8 +160,7 @@ const emit = defineEmits<{
 
 const theme = useTheme()
 const { smAndDown } = useDisplay()
-const vuetifyLocale = useLocale()
-const { locale: i18nLocale, t } = useI18n()
+const { t } = useI18n()
 const { palette, setPalette } = useUiPalette()
 const { mode, setMode } = useUiMode()
 const palettes = UI_PALETTES
@@ -212,15 +175,6 @@ const quickIcon = computed(() =>
 const quickLabel = computed(() =>
   t('nexus.mode.switchTo', { mode: t(`nexus.mode.options.${nextMode.value}`) }),
 )
-
-const changeLocale = async (nextLocale: string) => {
-  const selectedLocale = await setI18nLocale(nextLocale)
-  i18nLocale.value = selectedLocale
-  vuetifyLocale.current.value = selectedLocale
-  window.location.reload()
-}
-
-const isActiveLocale = (locale: string) => i18nLocale.value === locale
 
 const themes = [
   { value: 'light', icon: 'lucide:sun' },

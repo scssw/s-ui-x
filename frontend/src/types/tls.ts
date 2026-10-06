@@ -139,3 +139,32 @@ export const defaultOutTls: oTls = {
     config_path: "",
   }
 }
+
+export const realityHandshakeServers = [
+  'www.oracle.com',
+  'www.sony.com',
+  'www.amd.com',
+  'www.amazon.com',
+  'www.apple.com',
+]
+
+export const tlsNamePrefix = (domain: string): string => {
+  const prefix = domain.trim().toLowerCase().split('.')[0]?.replace(/[^a-z0-9-]/g, '')
+  return prefix || 'tls'
+}
+
+export const createDomainTlsTemplate = (
+  domain: string,
+  certificatePath = `/root/cert/${domain}/fullchain.pem`,
+  keyPath = `/root/cert/${domain}/privkey.pem`,
+): tls => ({
+  id: 0,
+  name: tlsNamePrefix(domain),
+  server: {
+    enabled: true,
+    server_name: domain,
+    certificate_path: certificatePath,
+    key_path: keyPath,
+  },
+  client: {},
+})

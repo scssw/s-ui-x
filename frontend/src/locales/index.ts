@@ -1,37 +1,18 @@
 import { createI18n } from 'vue-i18n'
 
-type LocaleCode = 'en' | 'fa' | 'vi' | 'zhHans' | 'zhHant' | 'ru'
+type LocaleCode = 'zhHans'
 type LocaleMessages = Record<string, unknown>
 
-const DEFAULT_LOCALE: LocaleCode = 'en'
+const DEFAULT_LOCALE: LocaleCode = 'zhHans'
 
 const localeLoaders: Record<LocaleCode, () => Promise<{ default: LocaleMessages }>> = {
-  en: () => import('./en'),
-  fa: () => import('./fa'),
-  vi: () => import('./vi'),
   zhHans: () => import('./zhcn'),
-  zhHant: () => import('./zhtw'),
-  ru: () => import('./ru'),
 }
 
-const supportedLocales = new Set<LocaleCode>(Object.keys(localeLoaders) as LocaleCode[])
 const loadedLocales = new Set<LocaleCode>()
 
-const normalizeLocale = (value?: string | null): LocaleCode => {
-  if (value && supportedLocales.has(value as LocaleCode)) {
-    return value as LocaleCode
-  }
-  return DEFAULT_LOCALE
-}
-
-const storedLocale = () => {
-  if (typeof localStorage === 'undefined') {
-    return DEFAULT_LOCALE
-  }
-  return normalizeLocale(localStorage.getItem('locale'))
-}
-
-const initialLocale = storedLocale()
+const normalizeLocale = (_value?: string | null): LocaleCode => DEFAULT_LOCALE
+const initialLocale = DEFAULT_LOCALE
 
 export const i18n = createI18n({
   legacy: false,
@@ -70,21 +51,7 @@ export const setI18nLocale = async (localeCode: string) => {
 }
 
 export const locale = (() => {
-  switch (initialLocale) {
-    case 'zhHans':
-      return 'zh-cn'
-    case 'zhHant':
-      return 'zh-tw'
-    default:
-      return initialLocale
-  }
+  return 'zh-cn'
 })()
 
-export const languages = [
-  { title: 'English', value: 'en' },
-  { title: 'فارسی', value: 'fa' },
-  { title: 'Tiếng Việt', value: 'vi' },
-  { title: '简体中文', value: 'zhHans' },
-  { title: '繁體中文', value: 'zhHant' },
-  { title: 'Русский', value: 'ru' },
-]
+export const languages = [{ title: '简体中文', value: 'zhHans' }]

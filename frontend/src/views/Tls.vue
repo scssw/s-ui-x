@@ -104,6 +104,8 @@ import Data from '@/store/modules/data'
 import { computed, defineAsyncComponent, ref } from 'vue'
 import { Inbound } from '@/types/inbounds'
 import { tls } from '@/types/tls'
+import { createDomainTlsTemplate } from '@/types/tls'
+import HttpUtils from '@/plugins/httputil'
 import { useUiMode } from '@/uiMode/useUiMode'
 
 const { mode } = useUiMode()
@@ -137,9 +139,26 @@ const modal = ref({
 
 const delOverlay = ref(new Array<boolean>(tlsConfigs.value.length).fill(false))
 
-const showModal = (id: number) => {
+const showModal = async (id: number) => {
   modal.value.id = id
-  modal.value.data = id == 0 ? '{}' : JSON.stringify(tlsConfigs.value.findLast(t => t.id == id))
+  if (id > 0) {
+    modal.value.data = JSON.stringify(tlsConfigs.value.findLast(t => t.id == id))
+  } else {
+    const settings = await HttpUtils.get('api/settings')
+    const domain = settings.success ? (settings.obj.subDomain || settings.obj.webDomain || '') : ''
+    if (domain) {
+      const useSubDomain = Boolean(settings.obj.subDomain)
+      const certPath = (useSubDomain ? settings.obj.subCertFile : settings.obj.webCertFile) || `/root/cert/${domain}/fullchain.pem`
+      const keyPath = (useSubDomain ? settings.obj.subKeyFile : settings.obj.webKeyFile) || `/root/cert/${domain}/privkey.pem`
+      const preset = createDomainTlsTemplate(domain, certPath, keyPath)
+      const baseName = preset.name
+      let suffix = 2
+      while (tlsConfigs.value.some(item => item.name === preset.name)) preset.name = `${baseName}-${suffix++}`
+      modal.value.data = JSON.stringify(preset)
+    } else {
+      modal.value.data = '{}'
+    }
+  }
   modal.value.visible = true
 }
 const clone = (obj: any) => {

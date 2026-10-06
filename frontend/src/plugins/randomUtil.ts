@@ -61,14 +61,8 @@ const RandomUtil = {
     return btoa(String.fromCharCode(...array))
   },
   randomShortId(): string[] {
-    let shortIds = new Array(24).fill('')
-    for (var ii = 1; ii < 24; ii++) {
-      for (var jj = 0; jj <= this.randomInt(7); jj++){
-          let randomNum = this.randomInt(256)
-          shortIds[ii] += ('0' + randomNum.toString(16)).slice(-2)
-      }
-  }
-  return shortIds
+    const hex = '0123456789abcdef'
+    return Array.from({ length: 4 }, () => Array.from({ length: 8 }, () => hex[this.randomInt(16)]).join(''))
   }
 }
 

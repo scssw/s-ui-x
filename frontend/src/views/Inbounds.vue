@@ -149,7 +149,7 @@ const appConfig = computed((): Config => {
 })
 
 const inbounds = computed((): Inbound[] => {
-  return <Inbound[]> Data().inbounds
+  return [...(<Inbound[]>Data().inbounds)].sort((a, b) => Number(b.id) - Number(a.id))
 })
 
 const tlsConfigs = computed((): any[] => {

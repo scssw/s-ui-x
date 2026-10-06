@@ -196,11 +196,12 @@
           <template v-if="outTls.reality && inTls.reality">
             <v-row>
               <v-col cols="12" sm="6" md="4">
-                <v-text-field
+                <v-select
                 :label="$t('types.shdwTls.hs')"
                 hide-details
+                :items="realityHandshakeServers"
                 v-model="inTls.reality.handshake.server">
-                </v-text-field>
+                </v-select>
               </v-col>
               <v-col cols="12" sm="6" md="4">
                 <v-text-field
@@ -373,6 +374,8 @@ import HttpUtils from '@/plugins/httputil'
 import { push } from 'notivue'
 import { i18n } from '@/locales'
 import RandomUtil from '@/plugins/randomUtil'
+import Data from '@/store/modules/data'
+import { realityHandshakeServers } from '@/types/tls'
 export default {
   props: ['visible', 'data', 'id'],
   emits: ['close', 'save'],
@@ -447,20 +450,31 @@ export default {
         this.title = "edit"
       }
       else {
-        this.tls = <tls>{ id: 0, name: '', server: {enabled: true}, client: {} }
-        this.tlsType = 0
-        this.usePath = 0
+        const preset = this.$props.data && this.$props.data !== '{}' ? JSON.parse(this.$props.data) : null
+        this.tls = <tls>(preset ?? { id: 0, name: '', server: {enabled: true}, client: {} })
+        this.tlsType = this.tls.server?.reality == undefined ? 0 : 1
+        this.usePath = this.tls.server?.key == undefined ? 0 : 1
         this.title = "add"
       }
     },
-    changeTlsType(){
+    async changeTlsType(){
       if (this.tlsType) {
+        const realityCount = Data().tlsConfigs.filter((item:any) => item.server?.reality).length
         this.tls.server = <iTls>{
           enabled: true,
-          reality: { enabled: true, handshake: { server_port: 443 }, short_id: RandomUtil.randomShortId() },
+          reality: {
+            enabled: true,
+            handshake: {
+              server: realityHandshakeServers[realityCount % realityHandshakeServers.length],
+              server_port: 443,
+            },
+            private_key: '',
+            short_id: RandomUtil.randomShortId(),
+          },
           server_name: ""
         }
         this.tls.client = <oTls>{ reality: { public_key: "" }, utls: defaultOutTls.utls }
+        await this.genRealityKey()
       } else {
         this.tls.server = <iTls>{ enabled: true }
         this.tls.client = <oTls>{}
