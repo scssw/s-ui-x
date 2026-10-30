@@ -192,3 +192,42 @@ export function createClient<T extends Client>(json?: Partial<T>): Client {
   
   return defaultObject
 }
+
+export function addMonths(date: Date, months: number): Date {
+  const result = new Date(date)
+  const targetYear = result.getFullYear() + Math.floor((result.getMonth() + months) / 12)
+  const targetMonth = (result.getMonth() + months) % 12
+  const day = result.getDate()
+  const daysInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate()
+  result.setFullYear(targetYear, targetMonth, Math.min(day, daysInTargetMonth))
+  return result
+}
+
+export function getMonthlyReset(startDate: Date = new Date()) {
+  const year = startDate.getFullYear()
+  const month = startDate.getMonth()
+  const day = startDate.getDate()
+
+  const nextMonth = (month + 1) % 12
+  const nextYear = month === 11 ? year + 1 : year
+  const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate()
+
+  let nextResetDate: Date
+  let resetDays: number
+
+  if (day <= daysInNextMonth) {
+    nextResetDate = new Date(startDate)
+    nextResetDate.setFullYear(nextYear, nextMonth, day)
+    resetDays = Math.round((nextResetDate.getTime() - startDate.getTime()) / (24 * 3600 * 1000))
+  } else {
+    resetDays = 30
+    nextResetDate = new Date(startDate.getTime() + resetDays * 24 * 3600 * 1000)
+  }
+
+  return {
+    resetDays,
+    nextReset: Math.floor(nextResetDate.getTime() / 1000),
+    nextResetDate,
+  }
+}
+

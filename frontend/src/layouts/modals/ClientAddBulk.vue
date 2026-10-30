@@ -45,6 +45,18 @@
             </v-col>
             <v-col cols="12" sm="6" md="4" v-if="!(bulkData.delayStart && !bulkData.autoReset)">
               <DatePick :expiry="bulkData.expiry" @submit="setDate" />
+              <div class="d-flex align-center flex-wrap mt-1" style="gap: 6px;">
+                <v-btn
+                  v-for="opt in expiryShortcuts"
+                  :key="opt.label"
+                  size="x-small"
+                  variant="tonal"
+                  color="primary"
+                  @click="setQuickExpiry(opt.months)"
+                >
+                  {{ opt.label }}
+                </v-btn>
+              </div>
             </v-col>
           </v-row>
           <v-row>
@@ -86,7 +98,7 @@ import { defineAsyncComponent } from 'vue'
 import FormShell from '@/components/nexus/drawers/FormShell.vue'
 import { push } from 'notivue'
 import RandomUtil from '@/plugins/randomUtil'
-import { Client, createClient, randomConfigs } from '@/types/clients'
+import { Client, createClient, randomConfigs, getMonthlyReset, addMonths } from '@/types/clients'
 import { i18n } from '@/locales'
 import Data from '@/store/modules/data'
 
@@ -103,7 +115,7 @@ export default {
         name: <any[]>[],
         desc: <any[]>[],
         group: '',
-        clientInbounds: [],
+        clientInbounds: this.inboundTags?.length ? this.inboundTags.slice(0, 2).map((i: any) => i.value) : [],
         expiry: 0,
         Volume: 0,
         delayStart: false,
@@ -126,7 +138,7 @@ export default {
         name: [this.patterns[1], "-", this.patterns[0]],
         desc: [],
         group: '',
-        clientInbounds: [],
+        clientInbounds: this.inboundTags?.length ? this.inboundTags.slice(0, 2).map((i: any) => i.value) : [],
         expiry: 0,
         Volume: 0,
         delayStart: false,
@@ -196,8 +208,12 @@ export default {
       })
       return result
     },
-    setDate(v:number){
+    setDate(v: number) {
       this.bulkData.expiry = v
+    },
+    setQuickExpiry(months: number) {
+      const date = addMonths(new Date(), months)
+      this.bulkData.expiry = Math.floor(date.getTime() / 1000)
     },
     setAllInbounds(){
       this.bulkData.clientInbounds = this.inboundTags.map((i:any) => i.value).sort()
@@ -207,11 +223,27 @@ export default {
     dirty(): boolean {
       return this.snapshot !== '' && JSON.stringify([this.count, this.bulkData]) !== this.snapshot
     },
+    expiryShortcuts() {
+      return [
+        { label: this.$t('date.month'), months: 1 },
+        { label: this.$t('date.quarter'), months: 3 },
+        { label: this.$t('date.halfYear'), months: 6 },
+        { label: this.$t('date.year'), months: 12 },
+      ]
+    },
   },
   watch: {
     visible(newValue) {
       if (newValue) {
         this.resetData()
+      }
+    },
+    'bulkData.autoReset'(val: boolean) {
+      if (val) {
+        const resetInfo = getMonthlyReset(new Date())
+        this.bulkData.resetDays = resetInfo.resetDays
+      } else {
+        this.bulkData.resetDays = 0
       }
     },
   },

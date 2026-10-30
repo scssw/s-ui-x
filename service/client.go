@@ -139,6 +139,17 @@ func (s *ClientService) Save(tx *gorm.DB, act string, data json.RawMessage, host
 		if err != nil {
 			return nil, err
 		}
+		if client.AutoReset {
+			if client.ResetDays <= 0 {
+				days, nextReset := calculateMonthlyReset(time.Now())
+				client.ResetDays = days
+				if !client.DelayStart && client.NextReset <= 0 {
+					client.NextReset = nextReset
+				}
+			} else if !client.DelayStart && client.NextReset <= 0 {
+				client.NextReset = time.Now().Unix() + int64(client.ResetDays)*86400
+			}
+		}
 		err = s.prepareClientSubSecret(tx, &client, act == "edit")
 		if err != nil {
 			return nil, err
@@ -179,6 +190,17 @@ func (s *ClientService) Save(tx *gorm.DB, act string, data json.RawMessage, host
 			return nil, err
 		}
 		for _, client := range clients {
+			if client.AutoReset {
+				if client.ResetDays <= 0 {
+					days, nextReset := calculateMonthlyReset(time.Now())
+					client.ResetDays = days
+					if !client.DelayStart && client.NextReset <= 0 {
+						client.NextReset = nextReset
+					}
+				} else if !client.DelayStart && client.NextReset <= 0 {
+					client.NextReset = time.Now().Unix() + int64(client.ResetDays)*86400
+				}
+			}
 			err = s.prepareClientSubSecret(tx, client, false)
 			if err != nil {
 				return nil, err
@@ -536,6 +558,31 @@ func (s *ClientService) DepleteClients() (inboundIds []uint, err error) {
 	}
 
 	return inboundIds, nil
+}
+
+// calculateMonthlyReset returns the period days and next reset timestamp
+// for a client with auto reset enabled. E.g. Oct 30 -> Nov 30 (31 days).
+// If created on Jan 31 (month without 31st), resets by 30 days.
+func calculateMonthlyReset(t time.Time) (int, int64) {
+	year, month, day := t.Date()
+	nextMonth := month + 1
+	nextYear := year
+	if nextMonth > 12 {
+		nextMonth = 1
+		nextYear++
+	}
+	daysInNextMonth := time.Date(nextYear, nextMonth+1, 0, 0, 0, 0, 0, t.Location()).Day()
+	if day <= daysInNextMonth {
+		target := time.Date(nextYear, nextMonth, day, t.Hour(), t.Minute(), t.Second(), 0, t.Location())
+		days := int(target.Sub(t).Hours() / 24)
+		if days < 1 {
+			days = 1
+		}
+		return days, target.Unix()
+	}
+	days := 30
+	target := t.AddDate(0, 0, 30)
+	return days, target.Unix()
 }
 
 // clientResetPeriodDays returns a client's periodic-reset interval in days,

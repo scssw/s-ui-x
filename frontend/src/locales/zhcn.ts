@@ -946,5 +946,9 @@ export default {
     m: "分",
     s: "秒",
     ms: "毫秒",
+    month: "月",
+    quarter: "季",
+    halfYear: "半年",
+    year: "年",
   },
 }

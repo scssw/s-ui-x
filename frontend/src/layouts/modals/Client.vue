@@ -39,6 +39,18 @@
                 </v-col>
                 <v-col cols="12" sm="6" md="4" v-if="!(client.delayStart && !client.autoReset)">
                   <DatePick :expiry="expDate" @submit="setDate" />
+                  <div class="d-flex align-center flex-wrap mt-1" style="gap: 6px;">
+                    <v-btn
+                      v-for="opt in expiryShortcuts"
+                      :key="opt.label"
+                      size="x-small"
+                      variant="tonal"
+                      color="primary"
+                      @click="setQuickExpiry(opt.months)"
+                    >
+                      {{ opt.label }}
+                    </v-btn>
+                  </div>
                 </v-col>
                 <v-col cols="12" sm="6" md="4" v-if="client.autoReset || client.delayStart">
                   <v-text-field v-model.number="resetDays" type="number" min="1" :label="$t('client.resetDays')" hide-details></v-text-field>
@@ -83,12 +95,12 @@
                   <v-icon icon="mdi-download" color="success" /><span class="text-success">{{ down }}</span>
                 </v-col>
               </v-row>
-              <v-row v-if="id >0 && client.autoReset">
+              <v-row v-if="(id > 0 || client.autoReset) && client.autoReset">
                 <v-col cols="12" sm="6" md="4">
                   <div class="text-medium-emphasis">{{ $t('client.nextReset') }}</div>
                   <div dir="ltr">{{ nextResetFormatted }}</div>
                 </v-col>
-                <v-col cols="12" sm="6" md="4">
+                <v-col cols="12" sm="6" md="4" v-if="id > 0">
                   <div class="text-medium-emphasis">{{ $t('main.stats.totalUsage') }}</div>
                   <div>
                     <v-icon icon="mdi-upload" color="orange" /><span class="text-orange">{{ totalUp }}</span>
@@ -222,7 +234,7 @@
 
 <script lang="ts">
 import { defineAsyncComponent } from 'vue'
-import { createClient, randomConfigs, updateConfigs, Link, shuffleConfigs } from '@/types/clients'
+import { createClient, randomConfigs, updateConfigs, Link, shuffleConfigs, getMonthlyReset, addMonths } from '@/types/clients'
 import { HumanReadable } from '@/plugins/utils'
 import Data from '@/store/modules/data'
 import HttpUtils from '@/plugins/httputil'
@@ -260,6 +272,7 @@ export default {
       subLinks: <Link[]>[],
       ipLimitModes: ['monitor', 'enforce'],
       snapshot: '',
+      userEditedExpiry: false,
     }
   },
   methods: {
@@ -284,8 +297,9 @@ export default {
         const initialExpiry = new Date(now)
         initialExpiry.setMonth(initialExpiry.getMonth() + 1)
         this.client.expiry = Math.floor(initialExpiry.getTime() / 1000)
+        this.userEditedExpiry = false
         this.client.limitIp = 3
-        this.client.inbounds = this.inboundTags?.length ? [this.inboundTags[0].value] : []
+        this.client.inbounds = this.inboundTags?.length ? this.inboundTags.slice(0, 2).map((i: any) => i.value) : []
         this.clientConfig = randomConfigs('client')
       }
       this.links = this.client.links?.filter(l => l.type == 'local')?? []
@@ -323,14 +337,19 @@ export default {
         this.loading = false
       }
     },
-    setDate(newDate:number){
+    setDate(newDate: number) {
+      this.userEditedExpiry = true
       this.client.expiry = newDate
     },
-    setSuggestedExpiry(volume:number) {
-      if (this.title !== 'add') return
+    setQuickExpiry(months: number) {
+      this.userEditedExpiry = true
+      const date = addMonths(new Date(), months)
+      this.client.expiry = Math.floor(date.getTime() / 1000)
+    },
+    setSuggestedExpiry(volume: number) {
+      if (this.title !== 'add' || this.userEditedExpiry) return
       const months = volume >= 600 ? 12 : volume >= 300 ? 6 : volume >= 150 ? 3 : 1
-      const date = new Date()
-      date.setMonth(date.getMonth() + months)
+      const date = addMonths(new Date(), months)
       this.client.expiry = Math.floor(date.getTime() / 1000)
     },
     setAllInbounds(){
@@ -366,20 +385,53 @@ export default {
         this.setSuggestedExpiry(v || 0)
       }
     },
+    expiryShortcuts() {
+      return [
+        { label: this.$t('date.month'), months: 1 },
+        { label: this.$t('date.quarter'), months: 3 },
+        { label: this.$t('date.halfYear'), months: 6 },
+        { label: this.$t('date.year'), months: 12 },
+      ]
+    },
     delayStart: {
-      get() { return this.client.delayStart?? false },
-      set(v:boolean) {
+      get() { return this.client.delayStart ?? false },
+      set(v: boolean) {
         this.client.delayStart = v
-        this.client.resetDays = v ? 1 : 0
-        if (v && !this.autoReset) this.client.expiry = 0
+        if (v) {
+          if (!this.client.resetDays) {
+            const resetInfo = getMonthlyReset(new Date())
+            this.client.resetDays = resetInfo.resetDays
+          }
+          if (!this.autoReset) {
+            this.client.expiry = 0
+          } else {
+            this.client.nextReset = 0
+          }
+        } else {
+          this.client.resetDays = this.autoReset ? (this.client.resetDays || getMonthlyReset(new Date()).resetDays) : 0
+          if (this.autoReset) {
+            const resetInfo = getMonthlyReset(new Date())
+            this.client.nextReset = resetInfo.nextReset
+          }
+        }
       }
     },
     autoReset: {
-      get() { return this.client.autoReset?? false },
-      set(v:boolean) {
+      get() { return this.client.autoReset ?? false },
+      set(v: boolean) {
         this.client.autoReset = v
-        this.client.resetDays = v ? 1 : 0
-        if (!v) this.client.nextReset = 0
+        if (v) {
+          const resetInfo = getMonthlyReset(new Date())
+          this.client.resetDays = resetInfo.resetDays
+          if (!this.client.delayStart) {
+            this.client.nextReset = resetInfo.nextReset
+          } else {
+            this.client.nextReset = 0
+          }
+        } else {
+          this.client.resetDays = 0
+          this.client.nextReset = 0
+        }
       }
     },
     resetDays: {
